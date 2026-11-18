@@ -117,5 +117,6 @@ feeder/                     typescript: reads the fee wallet over solana json-rp
 .github/workflows/fees.yml  runs the feeder every 15 minutes
 pi/                         python + shell for the pi 5: camera and PIR sensors
 img/                        desk photos (webp)
-favicon.svg                 the seed glyph
+favicon.svg                 the bloom flower
+brand/                      logo (svg, 500x500 png) and the 1500x500 banner
 ```
