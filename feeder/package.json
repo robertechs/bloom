@@ -1,0 +1,19 @@
+{
+  "name": "bloom-feeder",
+  "private": true,
+  "type": "module",
+  "description": "reads bloom's fee wallet on solana and writes data/bloom.json for the site",
+  "scripts": {
+    "sync": "tsx src/watch-fees.ts",
+    "test": "tsx --test src/*.test.ts",
+    "check": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "22.9.0",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}
