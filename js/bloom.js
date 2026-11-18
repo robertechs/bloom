@@ -6,7 +6,7 @@
    ===================================================================== */
 const BLOOM = {
   balance: 0,     // SOL in creator fees fed to it so far
-  contract: '',   // the token's contract address; while empty the site shows "add contract address"
+  contract: '',   // the token's contract address; while empty the site shows "token not live yet"
   dev: 0,         // part of balance the dev paid in himself, shown as "paid by dev"
   x: 'https://x.com/ImShantip'
 };
@@ -123,7 +123,7 @@ $$('[data-glyph-current]').forEach(el => { el.outerHTML = glyph(now); });
 $('[data-acct-stage]').innerHTML = `<b>${now}</b> · ${cur.name}${paidByDev ? ' <span class="st st-dev">paid by dev</span>' : ''}`;
 $('[data-acct-fed]').innerHTML = `<b>${fmt(BLOOM.balance)}</b> SOL${fromDev ? ` ${DEV_TAG}` : ''}`;
 $('[data-acct-next]').textContent = next ? `${next.name} @ ${fmt(next.mark)} SOL` : 'open-ended';
-$('[data-acct-ca]').textContent = BLOOM.contract ? `${BLOOM.contract.slice(0, 4)}…${BLOOM.contract.slice(-4)}` : 'add contract address';
+$('[data-acct-ca]').textContent = BLOOM.contract ? `${BLOOM.contract.slice(0, 4)}…${BLOOM.contract.slice(-4)}` : 'token not live yet';
 $('[data-now-meta]').textContent = `stage ${now} · ${cur.name}`;
 
 $('[data-st-stage]').innerHTML = `${glyph(now)} ${now} · ${cur.name}${paidByDev ? ' <span class="st st-dev">paid by dev</span>' : ''}`;
@@ -158,9 +158,9 @@ $$('[data-ca]').forEach(btn => {
       catch (e) { selectText(btn); }
     });
   } else {
-    btn.innerHTML = `<span class="ca-text">add contract address</span>${COPY}`;
+    btn.innerHTML = `<span class="ca-text">token not live yet</span>${COPY}`;
     btn.setAttribute('aria-disabled', 'true');
-    btn.title = 'the contract address is not set yet';
+    btn.title = 'the token is not live yet';
   }
 });
 
