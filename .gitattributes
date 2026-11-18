@@ -1,0 +1,3 @@
+*.ino linguist-language=C++
+*.service linguist-detectable=false
+feeder/package-lock.json linguist-generated=true
