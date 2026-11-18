@@ -118,5 +118,5 @@ feeder/                     typescript: reads the fee wallet over solana json-rp
 pi/                         python + shell for the pi 5: camera and PIR sensors
 img/                        desk photos (webp)
 favicon.svg                 the bloom flower
-brand/                      logo (svg, 500x500 png) and the 1500x500 banner
+brand/                      logo (svg, 500x500 png, night version) and the 1500x500 banner
 ```
