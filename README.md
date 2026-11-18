@@ -98,6 +98,21 @@ cd pi && bash setup.sh
 journalctl -u bloom-eyes -f
 ```
 
+`vision.py` is the next layer for eyes: it reads camera frames, finds motion with OpenCV background subtraction (MOG2), checks the moving regions for faces with a Haar cascade, and saves annotated frames and a `vision.jsonl` log.
+
+## the body
+
+`firmware/body/body.ino` is the Arduino firmware for stage 6: mecanum drive on four DC motors (two TB6612FNG drivers) plus an arm and gripper servo. it takes line commands from the pi over USB serial at 115200 baud:
+
+| command | does |
+| --- | --- |
+| `D vx vy w` | drive: forward, left, turn left, each -1 to 1. mecanum inverse kinematics, normalized so no wheel passes full speed |
+| `A deg` / `G deg` | arm / gripper servo angle |
+| `S` | stop |
+| `?` | report wheel speeds and servo angles |
+
+a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi side (pyserial): `python3 body.py drive 0.4 0 0 --for 1.5` keeps the watchdog fed while it moves, then stops.
+
 ## updating
 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
@@ -115,7 +130,8 @@ js/bloom.js                 stages, desk, diary, router, and the three.js cam wi
 data/bloom.json             live numbers, written by the feeder
 feeder/                     typescript: reads the fee wallet over solana json-rpc
 .github/workflows/fees.yml  runs the feeder every 15 minutes
-pi/                         python + shell for the pi 5: camera and PIR sensors
+pi/                         python + shell for the pi 5: camera, PIR sensors, vision, body link
+firmware/body/              arduino (c++) firmware for the mecanum base and servo arm
 img/                        desk photos (webp)
 favicon.svg                 the bloom flower
 brand/                      logo (svg, 500x500 png, night version) and the 1500x500 banner
