@@ -1,0 +1,55 @@
+name: fees
+
+# reads bloom's fee wallet on-chain and commits data/bloom.json when the numbers move.
+# vercel redeploys on that commit, so the site's stage follows the chain.
+# stays off until the FEE_WALLET repository variable is set
+# (settings > secrets and variables > actions > variables).
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fees
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: ${{ vars.FEE_WALLET != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: feeder/package-lock.json
+
+      - name: install
+        working-directory: feeder
+        run: npm ci
+
+      - name: read the fee wallet
+        working-directory: feeder
+        env:
+          FEE_WALLET: ${{ vars.FEE_WALLET }}
+          CONTRACT: ${{ vars.CONTRACT }}
+          RPC_URL: ${{ secrets.RPC_URL }}
+        run: npm run sync
+
+      - name: commit if fed
+        run: |
+          if git diff --quiet -- data/bloom.json; then
+            echo "nothing new"
+            exit 0
+          fi
+          git config user.name "bloom-feeder"
+          git config user.email "bloom-feeder@users.noreply.github.com"
+          git add data/bloom.json
+          git commit -m "fed: $(node -p "require('./data/bloom.json').balance") SOL"
+          git push
