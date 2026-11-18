@@ -8,7 +8,7 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo apt-get update
-sudo apt-get install -y python3-picamera2 python3-gpiozero python3-lgpio
+sudo apt-get install -y python3-picamera2 python3-gpiozero python3-lgpio python3-opencv python3-serial
 
 if ! rpicam-hello --list-cameras 2>/dev/null | grep -q "imx708"; then
   echo "camera module 3 not found. check the CSI ribbon: 22-pin end in the pi 5, contacts facing the board." >&2
