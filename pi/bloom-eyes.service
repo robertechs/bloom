@@ -1,0 +1,13 @@
+[Unit]
+Description=bloom eyes: camera module 3 + HC-SR501 PIR sensors
+After=multi-user.target
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+ExecStart=/usr/bin/python3 @DIR@/eyes.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
