@@ -252,11 +252,11 @@ function fillReader() {
   $('[data-r-pos]').textContent = `${ri + 1} / ${total}`;
   $('[data-r-newer]').disabled = ri === 0;
   $('[data-r-older]').disabled = ri === total - 1;
-  try { history.replaceState(null, '', `#entry-${no(ri)}`); } catch (e) {}
+  try { history.replaceState({ h: `entry-${no(ri)}` }, '', '/'); } catch (e) {}
 }
 function openEntry(i) { ri = i; fillReader(); if (!reader.open) { if (reader.showModal) reader.showModal(); else reader.setAttribute('open', ''); } }
 reader.addEventListener('close', () => {
-  try { history.replaceState(null, '', '#diary'); } catch (e) {}
+  if (document.body.dataset.page === 'diary') { try { history.replaceState({ h: 'diary' }, '', '/'); } catch (e) {} }
   if (ri >= shown) { shown = Math.min(total, ri + 1); renderDiary(); }
   const b = $(`[data-open="${ri}"]`); if (b) b.focus({ preventScroll: true });
 });
@@ -575,12 +575,15 @@ const clock = $('[data-clock]');
 const tickClock = () => { clock.textContent = new Date().toLocaleTimeString([], { hour12: false }); };
 tickClock(); if (!reduced) setInterval(tickClock, 1000);
 
-/* pages: #now (home), #desk, #stages, #diary; #stage-3 and #entry-008 open inside their page */
+/* pages: #now (home), #desk, #stages, #diary; #stage-3 and #entry-008 open inside their page.
+   links still use #names, but the address bar always shows just the domain: the page lives in
+   history state, so back/forward still work. old links with a #hash still open the right page. */
 const PAGES = { home: 'bloom', desk: 'the desk', stages: 'stages', diary: 'diary' };
 const navLinks = $$('[data-nav]');
 const crumb = $('[data-crumb]');
-function route() {
-  const h = location.hash.slice(1);
+let here_h = '';
+function route(h) {
+  here_h = h;
   let page = 'home', target = null, entry = -1;
   if (h === 'desk' || h === 'stages' || h === 'diary') page = h;
   else if (/^stage-\d$/.test(h)) { page = 'stages'; target = document.getElementById(h); }
@@ -595,7 +598,21 @@ function route() {
   if (target) target.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
   if (page !== 'stages') showStage(now);
   if (entry >= 0 && entry < total) openEntry(entry);
+  else if (reader.open) reader.close();
 }
-addEventListener('hashchange', route);
-route();
+const cleanUrl = h => { try { history.replaceState({ h }, '', '/'); } catch (e) {} };
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  const h = a.getAttribute('href').slice(1);
+  if (h !== here_h) { try { history.pushState({ h }, '', '/'); } catch (err) {} }
+  route(h);
+});
+addEventListener('popstate', e => route((e.state && e.state.h) || ''));
+/* someone typed or shared a #link: open it, then tidy the address bar */
+addEventListener('hashchange', () => { const h = location.hash.slice(1); route(h); cleanUrl(h); });
+const startH = (history.state && history.state.h) || location.hash.slice(1);
+route(startH);
+cleanUrl(startH);
 })();
