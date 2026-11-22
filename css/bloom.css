@@ -75,6 +75,7 @@ code,.mono{font-family:var(--f-mono);font-size:.92em}
 .navbar a:hover,.navbar a[aria-current="true"]{background:var(--tor-dark);color:#fff}
 .navbar .ext{margin-left:auto}
 .navbar .ext a{border-left:1px solid rgba(255,255,255,.25)}
+.navbar .x-logo{display:inline-block;vertical-align:-3px}
 
 /* page grid */
 .layout{display:grid;grid-template-columns:332px minmax(0,1fr);gap:20px;align-items:start;padding-block:20px 40px}
