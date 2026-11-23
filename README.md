@@ -112,9 +112,9 @@ journalctl -u bloom-eyes -f
 
 ## the eye
 
-bloom.cam has a second view, `eye`: what the pi's own camera sees, as it sees it. the desk loop stays the default, and the `desk | eye` switch under the cam is always there.
+bloom.cam is the Raspberry Pi Camera Module 3's point of view. until the pi sends its first frame, it plays a preview: `media/eyecam/eye-preview-720.mp4`, a made one-minute loop from the module's spot on the desk. the camera did not take it. the caption under it reads `Raspberry Pi Camera Module 3 pov`, and the picture itself carries only `bloom.eye`. the moment a real frame arrives, the real view takes its place. how the loop was made is in `media/eyecam/review.md`.
 
-until the pi sends its first frame, `eye` plays a preview: `media/eyecam/eye-preview-720.mp4`, a made one-minute loop of the Raspberry Pi Camera Module 3's point of view from its spot on the desk. the camera did not take it. the caption under it reads `Raspberry Pi Camera Module 3 pov`, and the picture itself carries only the view's name, `bloom.eye`. nothing of it is downloaded until somebody presses `eye`. the moment a real frame arrives, the real view takes its place. how the loop was made is in `media/eyecam/review.md`.
+set `cam` in the `BLOOM` block to a file under `media/deskcam/` to bring the desk loop back as the default with a `desk | eye` switch under the cam.
 
 how a frame travels:
 
@@ -123,7 +123,7 @@ how a frame travels:
 3. `api/eye.js` checks the key, stamps the frame with the time **the site** received it, and keeps only that newest frame in vercel's runtime cache. nothing is archived, on the pi or on the site.
 4. the page asks `GET /api/eye`, shows the frame with how many seconds old it is, and says what the pi found in it: `1 face in view`, `something moving`, `nothing moving`, and which sensor tripped.
 
-when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys the picture. the site never shows an old frame as a current one, and the stored frame deletes itself ten minutes after the last one arrived; after that the eye view is the preview again. once the camera runs for good, set `eyePreview` to `''` in the `BLOOM` block of `js/bloom.js`: then a camera that is off reads as closed, and the switch is only there while frames arrive.
+when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys the picture. the site never shows an old frame as a current one, and the stored frame deletes itself ten minutes after the last one arrived; after that the preview plays again. once the camera runs for good, set `eyePreview` to `''` in the `BLOOM` block of `js/bloom.js`: then a camera that is off reads as closed, or the blossom shows if both preview and desk loop are off.
 
 ### turning it on
 
@@ -155,7 +155,7 @@ the frame lives in vercel's runtime cache, which is counted in 8 kB units. `live
 | frames in any 24 hours, movement included | `--per-day 6000` | at most 180,000 writes |
 | reads | answers wait 4 s at the CDN (20 s while the eye is closed) | one per 4 s per CDN region that has visitors |
 
-that fits the hobby plan's allowance (200,000 writes and 1,000,000 reads a month). past the allowance vercel pauses the cache until the month turns: the eye reads as closed and the site shows the desk, nothing else breaks. `--every`, `--burst`, `--per-day`, `--size` and `--max-kb` are the knobs, e.g. `--every 60` halves the idle writes.
+that fits the hobby plan's allowance (200,000 writes and 1,000,000 reads a month). past the allowance vercel pauses the cache until the month turns: the eye reads as closed and the preview comes back, nothing else breaks. `--every`, `--burst`, `--per-day`, `--size` and `--max-kb` are the knobs, e.g. `--every 60` halves the idle writes.
 
 ## the body
 
@@ -174,8 +174,8 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
 - `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
-- bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block) as the live view, and nothing else: no stage previews. it joins the loop at the point the clock says, so a reload never starts it from the first frame. set `cam` to `''` and the panel shows the blossom at the current stage instead.
-- the `eye` view next to it shows frames from `pi/live.py` (`eye` in the `BLOOM` block is where the page asks, `''` turns it off). until the pi sends, it plays the preview loop in `media/eyecam/` (`eyePreview` and `eyePreviewPoster`, `''` turns it off).
+- bloom.cam plays the Camera Module 3 pov: the preview loop in `media/eyecam/` (`eyePreview` and `eyePreviewPoster`, `''` turns it off) until frames arrive from `pi/live.py` (`eye` in the `BLOOM` block, `''` turns the ask off). it joins the loop at the point the clock says.
+- optional desk loop: set `cam` and `camPoster` in the `BLOOM` block to files under `media/deskcam/` for a `desk | eye` switch; with `cam` at `''` only the eye view is shown.
 - build-log posts are plain html in the `#desk` section of `index.html`.
 
 push to `main` and vercel deploys it.
