@@ -112,7 +112,9 @@ journalctl -u bloom-eyes -f
 
 ## the eye
 
-bloom.cam has a second view, `eye`: what the pi's own camera sees, as it sees it. the desk loop stays the default. the `desk | eye` switch under the cam is only there while real frames are arriving, so with the pi off the site looks exactly as it does without any of this.
+bloom.cam has a second view, `eye`: what the pi's own camera sees, as it sees it. the desk loop stays the default, and the `desk | eye` switch under the cam is always there.
+
+until the pi sends its first frame, `eye` plays a preview: `media/eyecam/eye-preview-720.mp4`, a made one-minute loop of the view from the spot on the desk where the camera module sits. it is not the camera. `preview` is written in the picture and `eye · preview · camera not connected yet` under it, and nothing of it is downloaded until somebody presses `eye`. the moment a real frame arrives, the real view takes its place. how the loop was made is in `media/eyecam/review.md`.
 
 how a frame travels:
 
@@ -121,7 +123,7 @@ how a frame travels:
 3. `api/eye.js` checks the key, stamps the frame with the time **the site** received it, and keeps only that newest frame in vercel's runtime cache. nothing is archived, on the pi or on the site.
 4. the page asks `GET /api/eye`, shows the frame with how many seconds old it is, and says what the pi found in it: `1 face in view`, `something moving`, `nothing moving`, and which sensor tripped.
 
-when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys the picture, and for anyone on the desk view the switch goes away. the site never shows an old frame as a current one, and the stored frame deletes itself ten minutes after the last one arrived.
+when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys the picture. the site never shows an old frame as a current one, and the stored frame deletes itself ten minutes after the last one arrived; after that the eye view is the preview again. once the camera runs for good, set `eyePreview` to `''` in the `BLOOM` block of `js/bloom.js`: then a camera that is off reads as closed, and the switch is only there while frames arrive.
 
 ### turning it on
 
@@ -173,7 +175,7 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
 - `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
 - bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block) as the live view, and nothing else: no stage previews. it joins the loop at the point the clock says, so a reload never starts it from the first frame. set `cam` to `''` and the panel shows the blossom at the current stage instead.
-- the `eye` view next to it shows frames from `pi/live.py` and only appears while they arrive (`eye` in the `BLOOM` block is where the page asks, `''` turns it off).
+- the `eye` view next to it shows frames from `pi/live.py` (`eye` in the `BLOOM` block is where the page asks, `''` turns it off). until the pi sends, it plays the preview loop in `media/eyecam/` (`eyePreview` and `eyePreviewPoster`, `''` turns it off).
 - build-log posts are plain html in the `#desk` section of `index.html`.
 
 push to `main` and vercel deploys it.
@@ -188,6 +190,7 @@ api/eye.js                  the one function: takes frames from the pi, hands th
 dev.js                      local server: the static files plus api/eye.js
 test/                       node tests for api/eye.js
 media/deskcam/              the desk loop bloom.cam plays, its poster and stills
+media/eyecam/               the preview loop the eye view plays until the pi's camera sends
 data/bloom.json             live numbers, written by the feeder
 feeder/                     typescript: reads the fee wallet over solana json-rpc
 .github/workflows/fees.yml  runs the feeder every 15 minutes
