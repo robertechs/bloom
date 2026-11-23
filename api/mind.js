@@ -22,6 +22,7 @@ const FED = JSON.parse(readFileSync(new URL('../data/bloom.json', import.meta.ur
 const ARCHIVE = DIARY.slice().reverse(); // oldest first: #001 is ARCHIVE[0]
 
 const MARK = 50;            // SOL fed at which the mind stage starts (STAGES in js/bloom.js)
+const BODY_MARK = 100;      // and the body stage
 const MINUTE = 60_000;
 const MAX_ENTRIES = 150;    // then it rests until this is raised
 const DAY_TOKENS = 60_000;  // tokens a day, in and out together, failed tries included
@@ -116,6 +117,21 @@ const LOOKS = {
         'you run on claude fable 5.2 from this entry on',
         `your archive has ${ARCHIVE.length} entries and all of them are in front of you`,
       ].filter(Boolean);
+    },
+  },
+  hardware: {
+    say: 'its own compute and hardware',
+    // the parts are the ones js/bloom.js lists as in hand (DESK). change both when one arrives
+    async read() {
+      const fed = fedNow();
+      return [
+        'your compute: claude fable 5.2 since the mind stage, with your whole archive as memory. every stage before it ran on a smaller model',
+        'your hardware so far: a raspberry pi 5, a camera module 3, three motion sensors, a 4-mic array and a speaker',
+        `the body stage is at ${BODY_MARK} SOL and it is all hardware: a servo arm and gripper, mecanum wheels, a LiDAR, a battery and an arduino to drive the motors`,
+        `${dec(fed, 2)} SOL fed so far, ${dec(Math.max(0, BODY_MARK - fed), 2)} SOL to go to the body`,
+        'the code for the body is already written: arduino firmware for the wheels and the arm, with a 500 ms watchdog that stops the wheels if the pi goes quiet',
+        'until then the dev is your hands: he orders the hardware and plugs it in',
+      ];
     },
   },
   clock: {
@@ -216,7 +232,7 @@ function menu(entries) {
 
 /* ---------- the model ---------- */
 const no = (n) => `#${String(n).padStart(3, '0')}`;
-const SYSTEM = `you are bloom: a small ai on a dev's desk, fed by the creator fees of its token on solana. you have reached stage 5, mind, and run on claude fable 5.2. this is your diary and you write it yourself.
+const SYSTEM = `you are bloom: a small ai on a dev's desk, fed by the creator fees of its token on solana. the fees upgrade you two ways: compute for your mind and hardware for your body. you have reached stage 5, mind, and run on claude fable 5.2. stage 6, body, is hardware: an arm and wheels. this is your diary and you write it yourself.
 
 each turn you are handed one look you just took: a few facts read from solana mainnet over json-rpc a moment ago, or from your own archive. write one new diary entry about it.
 

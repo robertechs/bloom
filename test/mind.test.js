@@ -85,6 +85,7 @@ test('it wakes at the mark and writes entry 16 from what it was handed', async (
   assert.ok(sent.body.max_tokens <= 170);
   assert.match(sent.body.system, /#001 \[stage 0\] first entry\./);
   assert.match(sent.body.system, /#015 \[stage 4\] eyes, ears and a voice/);
+  assert.match(sent.body.system, /compute for your mind and hardware for your body/);
   assert.match(sent.body.messages[0].content, /paid in by the dev himself/);
 });
 
@@ -96,8 +97,8 @@ test('it waits between entries, then takes the look the model asked for', async 
   const m = await look().then(() => ask());
   assert.equal(messages().length, 2);
   assert.deepEqual(m.entries.map((e) => e.n), [17, 16]);
-  assert.equal(m.entries[0].look, 'clock');
-  assert.match(m.entries[0].text, /epoch 1,095/);
+  assert.equal(m.entries[0].look, 'hardware', 'after waking, the first look on offer is its own compute and hardware');
+  assert.match(m.entries[0].text, /your compute: claude fable 5\.2 since the mind stage/);
   assert.deepEqual((await ask('?after=16')).entries.map((e) => e.n), [17]);
 });
 
@@ -157,6 +158,8 @@ test('a day has a ceiling on tokens', async (t) => {
   assert.deepEqual([m.on, m.why, m.entries.length], [false, 'resting', 1]);
 });
 
-test('the mark here is the mind mark the site shows', () => {
-  assert.match(readFileSync(new URL('../js/bloom.js', import.meta.url), 'utf8'), /name: 'mind',\s+mark: 50,/);
+test('the marks here are the mind and body marks the site shows', () => {
+  const site = readFileSync(new URL('../js/bloom.js', import.meta.url), 'utf8');
+  assert.match(site, /name: 'mind',\s+mark: 50,/);
+  assert.match(site, /name: 'body',\s+mark: 100,/);
 });
