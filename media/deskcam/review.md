@@ -77,7 +77,11 @@ This shot is not as low as the brief describes. The camera cannot get that low o
 
 ## Video
 
-The loop is one continuous render of 900 frames, so the six segments were not made separately. Each full render covers A to F. There were four full renders. After each one I looked at a frame every 0.5 s and at the three frames either side of every boundary (6, 11, 16, 21, 26 s and the loop point).
+Passes 1 to 4 made a 30 s loop that travelled between five views. Pass 5 replaced it with what is in the folder now: one view, one minute. Both are logged here.
+
+### Passes 1 to 4: the 30 s loop with five views (replaced)
+
+That loop was one continuous render of 900 frames, so the six segments were not made separately. Each full render covers A to F. There were four full renders. After each one I looked at a frame every 0.5 s and at the three frames either side of every boundary (6, 11, 16, 21, 26 s and the loop point).
 
 | pass | where | what I saw | what I changed |
 | --- | --- | --- | --- |
@@ -92,27 +96,59 @@ The loop is one continuous render of 900 frames, so the six segments were not ma
 
 Tries per segment: every segment was rendered four times, because the loop is one piece. The table says which segment each fault was in. F had none of its own.
 
+### Pass 5: one still view, one minute (the loop in this folder)
+
+Feedback on the 30 s loop: the zooms and the travelling between views were wrong. The camera should stay where it is, on the Mac and the parts, and move only very slightly and very slowly. The code on the Mac should look like it is running and thinking. It should be about a minute long, and it should feel like a live view, so the loop must not be felt. Nothing new was to be generated.
+
+| what | before | now |
+| --- | --- | --- |
+| Length | 30 s, 900 frames | 60 s, 1800 frames |
+| Camera | Flew between five views, pushed in and pulled back | One view. No zoom, no travel. It sways about 3 cm sideways and under 1 cm up and down over the whole minute, so the angle changes a little and it never fully rests |
+| Speed in the picture | 0.8 px a frame at its slowest | 0.18 px a frame at its fastest, usually under 0.07 |
+| In frame | Changed with each view | Always: the whole laptop screen, keyboard, tumbler, AirPods case, three PIRs, camera module and ribbon, fan, blue board, Pi 5, XVF3800 board and flex, speaker |
+| Laptop screen | Editor scrolling, log lines appearing | The same Node.js file and process. Log lines arrive at uneven gaps. Five times a minute bloom's own line says "thinking" with moving dots for 2.6 s and then types a short thought. A dot beside the process name pulses. The editor glides to another part of the file every 10 s |
+| Stills and desk model | | Unchanged. Nothing was generated for this pass |
+
+Checks on this pass:
+
+| check | result |
+| --- | --- |
+| Path scan, every 30th frame | No part of any frame reaches past the desk model. First framing tried went past its top and right edges by up to 2.5%; moved the view in and made the sway smaller |
+| Render | One try, 1800 frames in four parts, each reporting nothing outside the model |
+| Frames at 0, 13, 31 and 47 s at full size, and a frame every 5 s on a sheet | Framing the same throughout, parts sharp, overlays in place, screen readable as code and a log |
+| Screen at 3.2, 4.6, 6.5, 31, 47 and 58 s | Log grows, "thinking" shows before a thought, the thought is typed out, the editor is at a different part of the file |
+| Loop point | Everything that moves repeats in exactly 60 s: the sway, the log (its last line leads into its first), the editor position, the LED (30 blinks) and the REC dot (60 blinks). Last two frames against the first two: no shift in the picture |
+
 ### What moves
 
-- The camera, always: across the centre view (A), panning and sliding left (B), swinging back and pushing in over the Pi (C), rising and pulling back to wide (D), sweeping right onto the speaker, mic and laptop (E), gliding back to centre (F).
+- The camera, by a few centimetres over the minute.
 - The Pi's LED.
-- The laptop screen: the editor scrolls and terminal lines appear.
+- The laptop screen: the log, the thoughts being typed, the pulsing dot, the editor gliding.
+- The red REC dot.
 - Nothing else. No hands, nothing on the desk shifts.
 
 ## Edit (ffmpeg)
 
-- 1920x1080, 30 fps, 900 frames.
+- 1920x1080, 30 fps, 1800 frames.
 - Look: `gblur=sigma=0.55`, `vignette=angle=PI/6.5`, `noise=alls=7:allf=t+u`.
-- Overlays in JetBrains Mono, white at 80%: "bloom.cam" top left; red dot and "REC" top right, the dot on for the first half of every second; the view name bottom left (center, left, parts, wide, right, center), changing at 8.5, 13.5, 18.5, 23.5 and 28 s with a short fade. No clock. The word "LIVE" does not appear.
+- Overlays in JetBrains Mono, white at 80%: "bloom.cam" top left; red dot and "REC" top right, the dot on for the first half of every second; the view name "center" bottom left for the whole loop, since there is one view now. No clock. The word "LIVE" does not appear.
+- A keyframe every 300 frames exactly (`keyint=300:min-keyint=300:scenecut=0`), so the loop point is a keyframe like the five others in the file.
+
+Encoder tests for the loop point, on the first 12 s: at 720p and CRF 28 the encoder holds the grain almost still between keyframes and refreshes it at each one. Nine settings were tried (`ipratio`/`pbratio`, `no-mbtree`, `qcomp`, `-tune grain`, a fixed grain pattern, a keyframe every 2 s) and none removed that refresh, so the choice was to make the loop point one of the regular refreshes instead of the only one. CRF stays at 20 and 28 as the brief says.
 
 ## Final check
 
 | check | result |
 | --- | --- |
-| `deskcam-loop.mp4` | H.264, 1920x1080, yuv420p, 30 fps, 900 frames, 30.000000 s, video stream only, faststart, CRF 20, 20.6 MB |
-| `deskcam-loop-720.mp4` | H.264, 1280x720, yuv420p, 30 fps, 900 frames, 30.000000 s, video stream only, faststart, CRF 28, 1.7 MB |
+| `deskcam-loop.mp4` | H.264, 1920x1080, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 20, 27.9 MB |
+| `deskcam-loop-720.mp4` | H.264, 1280x720, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 28, 1.2 MB |
 | `deskcam-poster.jpg` | first frame, 1920x1080 |
-| `shot-1-center.png` to `shot-5-wide.png` | 1920x1080 |
-| Contact sheet, a frame every 2 s | 15 frames, the five views in order, overlays in place |
-| Seam, 29.5 to 30.5 s of the loop played twice | Camera, screen and LED carry on across the loop point. Frame-to-frame change across it is 1.3 against 1.0 to 1.3 on either side; the difference is the encoder starting a new keyframe (the same happens at frames 250, 500 and 750), not motion. |
-| Boundaries at 6, 11, 16, 21, 26 s | Three frames either side of each: no stop, no jump, no pop in the picture |
+| `shot-1-center.png` to `shot-5-wide.png` | 1920x1080, unchanged from pass 4 |
+| Contact sheet, a frame every 5 s | 12 frames, one view, overlays in place |
+| Loop point, last second then first second | Camera, screen and LED carry on. Frame-to-frame change (blurred, mean of 255) at 1080p: 0.89 across the loop point, 0.82 to 0.87 at the other keyframes, 0.30 between ordinary frames. At 720p: 1.33 across the loop point, 1.00 to 1.15 at the other keyframes, 0.07 between ordinary frames |
+
+Not ideal, and left as it is:
+
+- At 720p the grain refreshes every 10 s, and the refresh at the loop point is a little stronger than the others (1.33 against 1.15 at most). Nothing in the picture moves at it; the texture is redrawn. Scaled to the bloom.cam panel (356 px wide) it comes to 1.2 brightness levels of 255 on average at a keyframe and 1.5 at the loop point, with one pixel in a hundred changing by 6 or 7. I measured it; I could not judge by eye whether it shows in playback.
+- The 1080p file is 27.9 MB for the minute. The site plays the 720p file.
+- The bottom-left label says "center" all the time.
