@@ -56,7 +56,7 @@ the build log with photos is on the site under `the desk`, mirrored from x.
 
 ## the site
 
-a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework and no build step. vercel serves the repo as-is, and the numbers come from `data/bloom.json`. the one part that is not a file is `api/eye.js`, a single function that receives what the pi's camera sees (see [the eye](#the-eye)).
+a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework and no build step. vercel serves the repo as-is, and the numbers come from `data/bloom.json`. two parts are not files: `api/eye.js`, a function that receives what the pi's camera sees (see [the eye](#the-eye)), and `api/mind.js`, which writes bloom's diary from the mind stage on (see [the mind](#the-mind)).
 
 - **bloom.cam**: the live view is a three.js r147 scene loaded from jsDelivr. petals are a custom vertex/fragment shader (cup, curl and vein shading), stamens are instanced meshes, and an `UnrealBloomPass` gives the glow. a final shader pass dithers the frame with a 4x4 bayer matrix down to five colours, like an old low-bandwidth feed.
 - **stage looks**: each stage has its own parameters (petal opening, scale, glow, mote count, halo ring, sound ripples from voice, a second inner petal ring from mind, orbiting parts at body). the blossom shows the current stage.
@@ -157,6 +157,39 @@ the frame lives in vercel's runtime cache, which is counted in 8 kB units. `live
 
 that fits the hobby plan's allowance (200,000 writes and 1,000,000 reads a month). past the allowance vercel pauses the cache until the month turns: the eye reads as closed and the preview comes back, nothing else breaks. `--every`, `--burst`, `--per-day`, `--size` and `--max-kb` are the knobs, e.g. `--every 60` halves the idle writes.
 
+## the mind
+
+stage 5. `api/mind.js` is asleep until `data/bloom.json` says 50 SOL have been fed. below that it answers `asleep`, reads nothing and calls nothing.
+
+awake, it works one look at a time:
+
+1. it reads a few numbers from solana mainnet over json-rpc: where the chain is in its epoch, how fast it is moving, the newest finished block, how much SOL exists, who is validating. now and then the look is at its own archive instead.
+2. it hands those facts to Claude Fable 5.2 in one short call, together with the 15 entries from before the mind stage and its own latest six. the model writes one diary entry about the look and picks the next one.
+3. the entry goes into the diary as `#016`, `#017` and so on. the page asks every 30 s and puts new entries on top, with the time the site got them.
+
+what an entry can say:
+
+- only numbers that were in the facts it was handed, or in something bloom wrote before. an entry with any other number is held back and the look is tried again later.
+- no links, no tags, no addresses.
+- only numbers travel from the chain into the prompt, never text someone else could have put on chain.
+- an answer that did not come from Fable 5.2 is not published.
+
+pace and cost:
+
+- looks happen only while someone has the site open. nobody reading, no tokens.
+- the first six entries come about five minutes apart, the next fourteen about half an hour apart, then one about every two hours.
+- one entry is about 1,000 tokens in and at most 170 out.
+- ceilings: 60,000 tokens a day, failed tries included, and 150 entries in total (`MAX_ENTRIES` in `api/mind.js`). at a ceiling it rests.
+
+where things are kept:
+
+- the entries: one json file in a private vercel blob store, `bloom-mind`, connected to the project. every write names the copy it replaces, so two visitors arriving together cannot cause two looks.
+- the model key: `ANTHROPIC_API_KEY` on the vercel project, production only. it is never in the repo. delete it and the mind rests; what it wrote stays in the diary.
+
+what it is not: the loop runs as a function on the site, not on the pi. it reads the chain through solana's public rpc (`RPC_URL` on the project switches to a private one). it does not read explorer sites, and it does not know the fee wallet or the token until `data/bloom.json` has them.
+
+turning it on: when 50 SOL are fed, `data/bloom.json` gets the new balance (from the feeder, or by hand) and the push to `main` wakes it. there is no other switch.
+
 ## the body
 
 `firmware/body/body.ino` is the Arduino firmware for stage 6: mecanum drive on four DC motors (two TB6612FNG drivers) plus an arm and gripper servo. it takes line commands from the pi over USB serial at 115200 baud:
@@ -173,7 +206,7 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 ## updating
 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
-- `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
+- `STAGES` (marks and purchases) and `DESK` (parts in hand) are at the top of `js/bloom.js`. the diary entries from before the mind stage are in `js/diary.js`, newest first; from the mind stage on bloom writes its own (see [the mind](#the-mind)). the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
 - bloom.cam plays the Camera Module 3 pov: the preview loop in `media/eyecam/` (`eyePreview` and `eyePreviewPoster`, `''` turns it off) until frames arrive from `pi/live.py` (`eye` in the `BLOOM` block, `''` turns the ask off). it joins the loop at the point the clock says.
 - optional desk loop: set `cam` and `camPoster` in the `BLOOM` block to files under `media/deskcam/` for a `desk | eye` switch; with `cam` at `''` only the eye view is shown.
 - build-log posts are plain html in the `#desk` section of `index.html`.
@@ -186,9 +219,12 @@ push to `main` and vercel deploys it.
 index.html                  page markup
 css/bloom.css               styles
 js/bloom.js                 stages, desk, diary, router, and the three.js cam with its shaders
-api/eye.js                  the one function: takes frames from the pi, hands the newest to the page
-dev.js                      local server: the static files plus api/eye.js
-test/                       node tests for api/eye.js
+js/diary.js                 the diary entries from before the mind stage
+api/eye.js                  takes frames from the pi, hands the newest to the page
+api/mind.js                 stage 5: reads the chain, has the model write the diary
+vercel.json                 gives api/mind.js time to finish a look, and data/bloom.json to read
+dev.js                      local server: the static files plus the two functions
+test/                       node tests for the two functions
 media/deskcam/              the desk loop bloom.cam plays, its poster and stills
 media/eyecam/               the preview loop the eye view plays until the pi's camera sends
 data/bloom.json             live numbers, written by the feeder

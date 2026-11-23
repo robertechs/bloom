@@ -2,7 +2,7 @@
   "name": "bloom-site",
   "private": true,
   "type": "module",
-  "description": "bloom's site: static files, plus one function (api/eye.js) that receives what the pi's camera sees",
+  "description": "bloom's site: static files, plus two functions: api/eye.js receives what the pi's camera sees, api/mind.js writes the diary from the mind stage on",
   "scripts": {
     "dev": "node dev.js",
     "test": "node --test test/*.test.js"
