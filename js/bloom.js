@@ -89,7 +89,9 @@ const fromDev = devSol > 0;
 const devStage = STAGES.reduce((acc, s, i) => (devSol >= s.mark ? i : acc), 0);
 const paidByDev = fromDev || builtStage > feeStage;
 const lastDevStage = Math.max(devStage, builtStage > feeStage ? builtStage : 0);
+const nowByDev = now <= lastDevStage;   // the dev's SOL or parts got bloom to the stage it is at
 const DEV_TAG = '<span class="st st-dev">paid by dev</span>';
+const DEV_PART = devSol >= BLOOM.balance ? DEV_TAG : `<span class="st st-dev">${fmt(devSol)} paid by dev</span>`;
 const cur = STAGES[now], next = STAGES[now + 1] || null;
 const progress = next ? Math.min(1, Math.max(0, (BLOOM.balance - cur.mark) / (next.mark - cur.mark))) : 1;
 const toGo = next ? Math.max(0, next.mark - BLOOM.balance) : 0;
@@ -119,20 +121,20 @@ function glyph(stage) {
 
 /* ---------- header, status ---------- */
 $$('[data-glyph-current]').forEach(el => { el.outerHTML = glyph(now); });
-$('[data-acct-stage]').innerHTML = `<b>${now}</b> · ${cur.name}${paidByDev ? ' <span class="st st-dev">paid by dev</span>' : ''}`;
-$('[data-acct-fed]').innerHTML = `<b>${fmt(BLOOM.balance)}</b> SOL${fromDev ? ` ${DEV_TAG}` : ''}`;
+$('[data-acct-stage]').innerHTML = `<b>${now}</b> · ${cur.name}${nowByDev ? ` ${DEV_TAG}` : ''}`;
+$('[data-acct-fed]').innerHTML = `<b>${fmt(BLOOM.balance)}</b> SOL${fromDev ? ` ${DEV_PART}` : ''}`;
 $('[data-acct-next]').textContent = next ? `${next.name} @ ${fmt(next.mark)} SOL` : 'open-ended';
 $('[data-acct-ca]').textContent = BLOOM.contract ? `${BLOOM.contract.slice(0, 4)}…${BLOOM.contract.slice(-4)}` : 'token not live yet';
 $('[data-now-meta]').textContent = `stage ${now} · ${cur.name}`;
 
-$('[data-st-stage]').innerHTML = `${glyph(now)} ${now} · ${cur.name}${paidByDev ? ' <span class="st st-dev">paid by dev</span>' : ''}`;
+$('[data-st-stage]').innerHTML = `${glyph(now)} ${now} · ${cur.name}${nowByDev ? ` ${DEV_TAG}` : ''}`;
 $('[data-st-fed]').innerHTML = fromDev
   ? `${fmt(BLOOM.balance)} SOL · ${devSol >= BLOOM.balance ? 'paid by dev' : `${fmt(devSol)} paid by dev`}`
   : `${fmt(BLOOM.balance)} SOL${paidByDev ? ' in creator fees' : ''}`;
 $('[data-st-next]').innerHTML = next ? `${next.name} at <span class="mono">${fmt(next.mark)} SOL</span>` : 'it keeps growing';
 const toBuy = cur.buys.filter(b => b[3] !== 'here').map(b => b[0]);
-if (fromDev && toBuy.length) $('[data-st-became]').textContent = `${fmt(devSol)} SOL in, paid by dev. ${cur.name} parts to buy: ${toBuy.join(', ').toLowerCase()}.`;
-else if (paidByDev && !fromDev) $('[data-st-became]').innerHTML = `hardware through ${cur.name} is in, paid by dev ahead of the fees. parts are on <a href="#desk">the desk</a>.`;
+if (nowByDev && fromDev && toBuy.length) $('[data-st-became]').textContent = `${fmt(devSol)} SOL in, paid by dev. ${cur.name} parts to buy: ${toBuy.join(', ').toLowerCase()}.`;
+else if (nowByDev && !fromDev) $('[data-st-became]').innerHTML = `hardware through ${cur.name} is in, paid by dev ahead of the fees. parts are on <a href="#desk">the desk</a>.`;
 else $('[data-st-became]').textContent = cur.became;
 const cells = 20, filled = Math.round(progress * cells);
 $('[data-ascii]').textContent = `${cur.name} [${'█'.repeat(filled)}${'░'.repeat(cells - filled)}] ${next ? next.name : ''}`;
@@ -289,7 +291,7 @@ const renderLatest = () => { $('[data-latest]').innerHTML = `<table class="tbl">
   <tr><td><a href="#stages">stages</a></td><td>${next ? `next: ${next.name} @ ${fmt(next.mark)} SOL` : 'past body'}</td><td class="r" data-l="stages">${STAGES.length}</td></tr>
 </tbody></table>`; };
 renderLatest();
-$('[data-foot-state]').textContent = `stage ${now}, ${cur.name}${paidByDev ? ' (paid by dev)' : ''} · ${fmt(BLOOM.balance)} SOL fed`;
+$('[data-foot-state]').textContent = `stage ${now}, ${cur.name}${nowByDev ? ' (paid by dev)' : ''} · ${fmt(BLOOM.balance)} SOL fed`;
 if (lastDevStage > 0) $('#stages .lede').insertAdjacentHTML('beforeend', ` stages 1 to ${lastDevStage} were paid by dev.`);
 const renderStats = () => { $('[data-foot-stats]').textContent = `${DIARY.length} diary entries · 5 build logs · ${here} parts in hand`; };
 renderStats();
@@ -661,7 +663,7 @@ function paintCam() {
   const name = `stage ${now} · ${STAGES[now].name}`, eyeOn = eyeOnly || view === 'eye';
   const real = eyeOn && !!eye, mock = eyeOn && !eye;   // the camera's own frame, or the preview of it
   $('[data-cam-stage]').textContent = name;
-  $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
+  $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${nowByDev ? ' · paid by dev' : ''}`;
   $('[data-cam-meta]').textContent = name;
   camHost.setAttribute('aria-label', real ? `what bloom's own camera sees`
     : mock ? `a preview of the Raspberry Pi Camera Module 3's point of view`
