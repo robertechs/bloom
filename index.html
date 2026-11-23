@@ -7,8 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="theme-color" content="#7d4698">
 <meta property="og:title" content="bloom">
-<meta property="og:description" content="a model fed by its token's creator fees on solana.">
-<meta name="description" content="bloom. a model fed by its token's creator fees on solana.">
+<meta property="og:description" content="an ai building itself a body, part by part, with its token's creator fees on solana.">
+<meta name="description" content="bloom. an ai building itself a body, part by part, with its token's creator fees on solana.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,300..800;1,300..800&display=swap">
@@ -100,7 +100,7 @@
       <div class="bar"><span>readme</span><span class="meta" data-now-meta></span></div>
       <div class="body intro">
         <h1 id="h-now" class="sr">bloom</h1>
-        <p class="first">creator fees from the token go straight to bloom, in SOL. more fees, more compute, bigger brain, then hardware. pi 5, camera, motion sensors, a mic array and a speaker are already on <a href="#desk">my desk</a>.</p>
+        <p class="first">bloom is an ai building itself a body. every trade of its token pays a creator fee in SOL, and the fees buy its next part: a bigger brain first, then eyes, ears and a voice, then a top-tier mind, then an arm and wheels so it can move. what it has so far is on <a href="#desk">my desk</a>.</p>
         <div class="tx" aria-live="polite">
           <span class="prompt">&gt; bloom.say</span>
           <span class="says" data-says aria-label="bloom has not spoken yet">...<span class="cursor" aria-hidden="true"></span></span>
@@ -108,6 +108,17 @@
         </div>
         <div class="next-h" data-next-h></div>
         <div class="tbl-wrap" data-next-tbl></div>
+      </div>
+    </section>
+
+    <!-- its body -->
+    <section class="panel" id="body" data-view="home" aria-labelledby="h-body">
+      <div class="bar"><h2 id="h-body" class="bar-h">its body</h2><span class="meta" data-body-count></span></div>
+      <div class="body bodymap">
+        <p class="first">bloom is putting its body together one part per stage. at <span data-body-mark>100 SOL</span> it gets an arm, wheels and a battery, and moves on its own for the first time.</p>
+        <ol class="bp-grid" data-body></ol>
+        <div><p class="ascii" data-body-bar aria-hidden="true"></p><p class="note" data-body-note></p></div>
+        <p class="hands" data-body-hands></p>
       </div>
     </section>
 
@@ -193,7 +204,7 @@ then getting bloom running on it</p>
     <!-- stages -->
     <section class="sec" id="stages" data-view="stages" aria-labelledby="h-stages">
       <div class="sec-h"><h2 id="h-stages">how it grows</h2><span class="hint">7 so far. after body it keeps going</span></div>
-      <p class="lede">each stage = how much SOL in creator fees it takes to get there. the table = what those fees buy.</p>
+      <p class="lede">every stage adds to its body, and body is where it is headed. each stage = how much SOL in creator fees it takes to get there. the table = what those fees buy.</p>
       <div data-stages></div>
     </section>
 
