@@ -125,7 +125,7 @@ when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys th
 
 ### turning it on
 
-1. in the vercel project, settings > environment variables: add `EYE_KEY` for production, any long random string (`openssl rand -hex 32`), then redeploy. without it the function refuses every frame.
+1. the site needs `EYE_KEY` in the vercel project (settings > environment variables, production): any long random string (`openssl rand -hex 32`). redeploy after adding or changing it. without it the function refuses every frame.
 2. plug the camera in: the CSI ribbon's 22-pin end goes in the pi 5, contacts facing the board, the 15-pin end in the camera.
 3. on the pi:
 

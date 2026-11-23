@@ -377,7 +377,7 @@ def main() -> int:
                         again = "" if args.once else f". trying again in {wait:.0f}s"
                         print(f"eye: not sent ({why}){again}", file=sys.stderr, flush=True)
                         if args.once:
-                            status = 1
+                            status = 3 if why.startswith("http 401") else 1  # 3: wrong key, so setup-live.sh asks for it again
                             break
 
             stop.wait(max(0.0, 0.2 - (time.monotonic() - tick)))  # look about five times a second

@@ -14,7 +14,7 @@ mkdir -p "${conf}"
 chmod 700 "${conf}"
 
 if [ ! -s "${conf}/eye.env" ]; then
-  echo "the key is EYE_KEY in the vercel project: settings > environment variables."
+  echo "the key is EYE_KEY (production) in the vercel project: settings > environment variables."
   read -r -s -p "paste it here, then enter (it is not shown): " key
   echo
   if [ -z "${key}" ]; then
@@ -48,7 +48,16 @@ set -a
 # shellcheck disable=SC1091
 . "${conf}/eye.env"
 set +a
-python3 "${here}/live.py" --once --no-pir
+sent=0
+python3 "${here}/live.py" --once --no-pir || sent=$?
+if [ "${sent}" -eq 3 ]; then
+  rm -f "${conf}/eye.env"
+  echo "that key is not the site's. copy the production EYE_KEY from the vercel project and run this again." >&2
+  exit 1
+elif [ "${sent}" -ne 0 ]; then
+  echo "the frame did not arrive, so nothing was installed. see the line above, then run this again." >&2
+  exit 1
+fi
 
 sed -e "s|@USER@|${USER}|g" -e "s|@DIR@|${here}|g" -e "s|@CONF@|${conf}|g" "${here}/bloom-live.service" \
   | sudo tee /etc/systemd/system/bloom-live.service >/dev/null
