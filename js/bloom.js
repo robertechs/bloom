@@ -11,7 +11,7 @@ const BLOOM = {
   cam: '',        // the desk cam loop; set to a file under media/deskcam/ to bring the desk view back with the eye switch
   camPoster: '',  // first frame of the desk loop
   eye: '/api/eye',  // where the pi's own camera reports (pi/live.py). its frames are the "eye" view of bloom.cam while they arrive; '' turns it off
-  eyePreview: 'media/eyecam/eye-preview-720.mp4',      // a made loop of the view from the camera's spot, shown as "preview" on the eye view until the pi sends. '' once the camera runs
+  eyePreview: 'media/eyecam/eye-preview-720.mp4',      // a made three-minute loop of the view from the camera's spot, captioned "preview" on the page until the pi sends. '' once the camera runs
   eyePreviewPoster: 'media/eyecam/eye-preview-poster.jpg',
   x: 'https://x.com/ImShantip'
 };
@@ -608,7 +608,7 @@ if (feedOn || preOn) {
    Camera Module 3's point of view from its spot on the desk. a real frame always wins over the preview. */
 const eyeImg = $('.cam-eye', camHost), eyeOv = $('.eye-ov', camHost);
 const viewBox = $('[data-cam-views]'), says = $('[data-cam-says]');
-const saysDesk = says.textContent, saysPre = 'Raspberry Pi Camera Module 3 pov';
+const saysDesk = 'live, right now', saysPre = 'Raspberry Pi Camera Module 3 pov · preview';   // the loop is a made preview, and the page says so
 let view = feedOn ? 'desk' : 'eye', eye = null, eyeTimer = 0, eyeBusy = false, eyeAsk = !!BLOOM.eye;
 const eyeAge = () => eye.age + performance.now() - eye.got;                      // ms since the site received the frame
 const eyeOpen = () => !!eye && eyeAge() < Math.max(90, eye.every * 2.5) * 1000;  // closed once frames stop coming
@@ -620,7 +620,7 @@ function paintCam() {
   $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
   $('[data-cam-meta]').textContent = name;
   camHost.setAttribute('aria-label', real ? `what bloom's own camera sees`
-    : mock ? `the Raspberry Pi Camera Module 3's point of view`
+    : mock ? `a preview of the Raspberry Pi Camera Module 3's point of view`
     : feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
   camHost.classList.toggle('has-feed', feedOn || eyeOn);
   /* the loops have their own labels burned in, so the overlays only sit on the blossom and on the camera's frames */
