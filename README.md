@@ -117,6 +117,7 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
 - `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
+- bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block). set `cam` to `''` and the panel shows the blossom again; the stage previews always show the blossom.
 - build-log posts are plain html in the `#desk` section of `index.html`.
 
 push to `main` and vercel deploys it.

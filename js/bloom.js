@@ -8,6 +8,8 @@ const BLOOM = {
   balance: 0,     // SOL in creator fees fed to it so far
   contract: '',   // the token's contract address; while empty the site shows "token not live yet"
   dev: 0,         // part of balance the dev paid in himself, shown as "paid by dev"
+  cam: 'media/deskcam/deskcam-loop-720.mp4',      // the desk cam loop; set to '' and bloom.cam shows the blossom instead
+  camPoster: 'media/deskcam/deskcam-poster.jpg',  // its first frame: shown while the loop loads, and instead of it under reduced motion
   x: 'https://x.com/ImShantip'
 };
 
@@ -492,7 +494,7 @@ function createCam(host, stage0) {
   composer.addPass(dither);
 
   const st = Object.assign({}, LOOK[stage0]); let tgt = LOOK[stage0];
-  let t = 0, last = performance.now(), running = false, raf = 0, visible = false, spin = 0;
+  let t = 0, last = performance.now(), running = false, raf = 0, visible = false, spin = 0, held = false;
   const ptr = { x: 0, y: 0 }, rot = { x: 0, y: 0 };
 
   function apply() {
@@ -523,7 +525,7 @@ function createCam(host, stage0) {
   const step = dt => { const kk = 1 - Math.exp(-dt * 2.6); for (const key in tgt) st[key] += (tgt[key] - st[key]) * kk; if (!reduced) spin += dt * .12; };
   const render = () => { apply(); composer.render(); };
   function frame(n) { raf = requestAnimationFrame(frame); const dt = Math.min(.05, (n - last) / 1000); last = n; t += dt; step(dt); render(); }
-  function start() { if (reduced) { render(); return; } if (running) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  function start() { if (held) return; if (reduced) { render(); return; } if (running) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
   function stop() { running = false; cancelAnimationFrame(raf); }
   function resize() {
     const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;
@@ -539,12 +541,33 @@ function createCam(host, stage0) {
   new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible && !document.hidden) start(); else stop(); }).observe(host);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else if (visible) start(); });
   addEventListener('pointermove', e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = e.clientY / innerHeight * 2 - 1; }, { passive: true });
-  return { setStage(n) { tgt = LOOK[n]; if (reduced) { Object.assign(st, tgt); render(); } } };
+  return {
+    setStage(n) { tgt = LOOK[n]; if (reduced) { Object.assign(st, tgt); render(); } },
+    /* stop drawing while the desk loop covers the canvas */
+    hold(v) { if (v === held) return; held = v; if (v) stop(); else if (visible && !document.hidden) start(); }
+  };
 }
 
 const camHost = $('#cam');
+/* the desk cam: with BLOOM.cam set, the live view is that loop and the blossom is the stage preview.
+   if the file can't be played the cam goes back to the blossom. */
+const feed = $('.cam-feed', camHost);
+let feedOn = !!BLOOM.cam, feedSeen = false;
+camHost.classList.toggle('has-feed', feedOn);
 const cam = createCam(camHost, now);
-if (!cam) { camHost.querySelector('canvas').hidden = true; const fb = camHost.querySelector('.cam-fb'); fb.innerHTML = glyph(now); fb.hidden = false; }
+const camFb = $('.cam-fb', camHost);
+if (!cam) camFb.innerHTML = glyph(now);
+function playFeed() {
+  if (feedOn && !feed.hidden && feedSeen && !document.hidden && !reduced) { const p = feed.play(); if (p) p.catch(() => {}); }
+  else feed.pause();
+}
+if (feedOn) {
+  if (BLOOM.camPoster) feed.poster = BLOOM.camPoster;
+  feed.addEventListener('error', () => { feedOn = false; camHost.classList.remove('has-feed'); paintCam(); });
+  feed.src = BLOOM.cam;
+  new IntersectionObserver(es => { feedSeen = es[0].isIntersecting; playFeed(); }).observe(camHost);
+  document.addEventListener('visibilitychange', playFeed);
+}
 
 /* cam controls: tabs, "view in cam", and the stage you are reading */
 const tabs = $('[data-cam-tabs]');
@@ -552,8 +575,11 @@ tabs.innerHTML = STAGES.map((s, i) => `<button type="button" data-tab="${i}" ari
 let camStage = -1;
 function showStage(n) {
   if (n === camStage) return; camStage = n;
-  if (cam) cam.setStage(n); else camHost.querySelector('.cam-fb').innerHTML = glyph(n);
-  const live = n === now;
+  if (cam) cam.setStage(n); else camFb.innerHTML = glyph(n);
+  paintCam();
+}
+function paintCam() {
+  const n = camStage, live = n === now, desk = live && feedOn;
   $$('[data-tab]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.tab === n)));
   $('[data-rec]').classList.toggle('preview', !live);
   $('[data-rec-label]').textContent = live ? 'live' : 'preview';
@@ -562,8 +588,15 @@ function showStage(n) {
   $('[data-cam-meta]').textContent = live ? `stage ${n} · ${STAGES[n].name}` : `preview · ${STAGES[n].name}`;
   $('[data-cam-say]').textContent = live ? 'live, right now' : `preview: ${STAGES[n].name} @ ${fmt(STAGES[n].mark)} SOL`;
   $('[data-cam-live]').hidden = live;
-  camHost.setAttribute('aria-label', live ? `bloom right now, stage ${n}, ${STAGES[n].name}` : `preview of bloom at stage ${n}, ${STAGES[n].name}`);
+  camHost.setAttribute('aria-label', desk ? `bloom's desk cam, stage ${n}, ${STAGES[n].name}` : live ? `bloom right now, stage ${n}, ${STAGES[n].name}` : `preview of bloom at stage ${n}, ${STAGES[n].name}`);
   $$('.stage').forEach(s => s.classList.toggle('active', +s.dataset.stage === n));
+  /* the loop has its own labels burned in, so the overlay only sits on the blossom */
+  feed.hidden = !desk;
+  $('canvas', camHost).hidden = desk || !cam;
+  camFb.hidden = desk || !!cam;
+  $('.cam-ov', camHost).hidden = desk;
+  if (cam) cam.hold(desk);
+  playFeed();
 }
 showStage(now);
 tabs.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showStage(+b.dataset.tab); });
