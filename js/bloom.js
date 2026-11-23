@@ -208,7 +208,6 @@ $('[data-stages]').innerHTML = STAGES.map((s, i) => `
       <h3 class="stage-name" id="sn-${i}">${s.name}</h3>
       ${i === now ? '<span class="st st-now">now</span>' : ''}${i === now + 1 ? '<span class="st st-next">next</span>' : ''}${i > 0 && i <= lastDevStage ? DEV_TAG : ''}
       <span class="stage-mark">${fmt(s.mark)} SOL</span>
-      <button class="stage-view" type="button" data-view="${i}">view in cam</button>
     </div>
     <div class="stage-body">
       <p class="became">${esc(s.became)}</p>
@@ -493,7 +492,7 @@ function createCam(host, stage0) {
   });
   composer.addPass(dither);
 
-  const st = Object.assign({}, LOOK[stage0]); let tgt = LOOK[stage0];
+  const st = Object.assign({}, LOOK[stage0]), tgt = LOOK[stage0];
   let t = 0, last = performance.now(), running = false, raf = 0, visible = false, spin = 0, held = false;
   const ptr = { x: 0, y: 0 }, rot = { x: 0, y: 0 };
 
@@ -542,75 +541,65 @@ function createCam(host, stage0) {
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else if (visible) start(); });
   addEventListener('pointermove', e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = e.clientY / innerHeight * 2 - 1; }, { passive: true });
   return {
-    setStage(n) { tgt = LOOK[n]; if (reduced) { Object.assign(st, tgt); render(); } },
     /* stop drawing while the desk loop covers the canvas */
     hold(v) { if (v === held) return; held = v; if (v) stop(); else if (visible && !document.hidden) start(); }
   };
 }
 
 const camHost = $('#cam');
-/* the desk cam: with BLOOM.cam set, the live view is that loop and the blossom is the stage preview.
-   if the file can't be played the cam goes back to the blossom. */
+/* the cam shows one thing: bloom right now. with BLOOM.cam set that is the live view of the desk.
+   if the file can't be played the cam goes back to the blossom at the current stage. */
 const feed = $('.cam-feed', camHost);
 let feedOn = !!BLOOM.cam, feedSeen = false;
 camHost.classList.toggle('has-feed', feedOn);
 const cam = createCam(camHost, now);
 const camFb = $('.cam-fb', camHost);
 if (!cam) camFb.innerHTML = glyph(now);
+/* a live view has no beginning: whenever you look, it is as far along as the clock says */
+let syncLeft = 3;
+function syncFeed() {
+  const d = feed.duration; if (!(d > 0 && isFinite(d))) return;
+  const want = (Date.now() / 1000) % d, off = Math.abs(feed.currentTime - want);
+  if (Math.min(off, d - off) < 0.5 || syncLeft <= 0) return;
+  /* only jump where the browser says it can; a jump it can't make lands on 0 and would be asked for again */
+  const can = feed.seekable;
+  for (let i = 0; i < can.length; i++) {
+    if (want >= can.start(i) && want <= can.end(i)) { syncLeft--; feed.currentTime = want; return; }
+  }
+}
 function playFeed() {
-  if (feedOn && !feed.hidden && feedSeen && !document.hidden && !reduced) { const p = feed.play(); if (p) p.catch(() => {}); }
-  else feed.pause();
+  if (feedOn && !feed.hidden && feedSeen && !document.hidden && !reduced) {
+    if (feed.paused) { syncLeft = 3; syncFeed(); }
+    const p = feed.play(); if (p) p.catch(() => {});
+  } else feed.pause();
 }
 if (feedOn) {
   if (BLOOM.camPoster) feed.poster = BLOOM.camPoster;
   feed.addEventListener('error', () => { feedOn = false; camHost.classList.remove('has-feed'); paintCam(); });
+  /* a seek asked for before the file has arrived may not hold, so ask again once it has */
+  feed.addEventListener('loadedmetadata', syncFeed);
+  feed.addEventListener('canplaythrough', syncFeed);
   feed.src = BLOOM.cam;
   new IntersectionObserver(es => { feedSeen = es[0].isIntersecting; playFeed(); }).observe(camHost);
   document.addEventListener('visibilitychange', playFeed);
 }
 
-/* cam controls: tabs, "view in cam", and the stage you are reading */
-const tabs = $('[data-cam-tabs]');
-tabs.innerHTML = STAGES.map((s, i) => `<button type="button" data-tab="${i}" aria-pressed="${i === now}" class="${i === now ? 'is-now' : ''}" title="stage ${i}, ${s.name}" aria-label="stage ${i}, ${s.name}">${i}</button>`).join('');
-let camStage = -1;
-function showStage(n) {
-  if (n === camStage) return; camStage = n;
-  if (cam) cam.setStage(n); else camFb.innerHTML = glyph(n);
-  paintCam();
-}
 function paintCam() {
-  const n = camStage, live = n === now, desk = live && feedOn;
-  $$('[data-tab]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.tab === n)));
-  $('[data-rec]').classList.toggle('preview', !live);
-  $('[data-rec-label]').textContent = live ? 'live' : 'preview';
-  $('[data-cam-stage]').textContent = `stage ${n} · ${STAGES[n].name}`;
-  $('[data-cam-mark]').textContent = live ? `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}` : `${fmt(STAGES[n].mark)} SOL`;
-  $('[data-cam-meta]').textContent = live ? `stage ${n} · ${STAGES[n].name}` : `preview · ${STAGES[n].name}`;
-  $('[data-cam-say]').textContent = live ? 'live, right now' : `preview: ${STAGES[n].name} @ ${fmt(STAGES[n].mark)} SOL`;
-  $('[data-cam-live]').hidden = live;
-  camHost.setAttribute('aria-label', desk ? `bloom's desk cam, stage ${n}, ${STAGES[n].name}` : live ? `bloom right now, stage ${n}, ${STAGES[n].name}` : `preview of bloom at stage ${n}, ${STAGES[n].name}`);
-  $$('.stage').forEach(s => s.classList.toggle('active', +s.dataset.stage === n));
+  const name = `stage ${now} · ${STAGES[now].name}`;
+  $('[data-cam-stage]').textContent = name;
+  $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
+  $('[data-cam-meta]').textContent = name;
+  camHost.setAttribute('aria-label', feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
   /* the loop has its own labels burned in, so the overlay only sits on the blossom */
-  feed.hidden = !desk;
-  $('canvas', camHost).hidden = desk || !cam;
-  camFb.hidden = desk || !!cam;
-  $('.cam-ov', camHost).hidden = desk;
-  if (cam) cam.hold(desk);
+  feed.hidden = !feedOn;
+  $('canvas', camHost).hidden = feedOn || !cam;
+  camFb.hidden = feedOn || !!cam;
+  $('.cam-ov', camHost).hidden = feedOn;
+  if (cam) cam.hold(feedOn);
   playFeed();
 }
-showStage(now);
-tabs.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showStage(+b.dataset.tab); });
-$('[data-cam-live]').addEventListener('click', () => showStage(now));
-$('[data-stages]').addEventListener('click', e => {
-  const b = e.target.closest('[data-view]'); if (!b) return;
-  showStage(+b.dataset.view);
-  if (innerWidth <= 860) camHost.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
-});
-if (innerWidth > 860) {
-  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) showStage(+en.target.dataset.stage); }), { rootMargin: '-45% 0px -54% 0px' });
-  $$('.stage').forEach(s => io.observe(s));
-  new IntersectionObserver(es => { if (!es[0].isIntersecting) showStage(now); }).observe($('#stages'));
-}
+paintCam();
+$$('.stage').forEach(el => el.classList.toggle('active', +el.dataset.stage === now));
 
 /* the cam's clock is the viewer's own time */
 const clock = $('[data-clock]');
@@ -638,7 +627,6 @@ function route(h) {
   document.title = page === 'home' ? 'bloom' : `${PAGES[page]} · bloom`;
   if (page === 'diary' && entry >= shown) { shown = Math.min(total, entry + 1); renderDiary(); }
   if (target) target.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
-  if (page !== 'stages') showStage(now);
   if (entry >= 0 && entry < total) openEntry(entry);
   else if (reader.open) reader.close();
 }

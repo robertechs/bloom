@@ -59,7 +59,7 @@ the build log with photos is on the site under `the desk`, mirrored from x.
 a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework, no build step, no backend. vercel serves the repo as-is, and the numbers come from `data/bloom.json`.
 
 - **bloom.cam**: the live view is a three.js r147 scene loaded from jsDelivr. petals are a custom vertex/fragment shader (cup, curl and vein shading), stamens are instanced meshes, and an `UnrealBloomPass` gives the glow. a final shader pass dithers the frame with a 4x4 bayer matrix down to five colours, like an old low-bandwidth feed.
-- **stage looks**: each stage has its own parameters (petal opening, scale, glow, mote count, halo ring, sound ripples from voice, a second inner petal ring from mind, orbiting parts at body). the cam eases between them, and the stage tabs let you preview any stage.
+- **stage looks**: each stage has its own parameters (petal opening, scale, glow, mote count, halo ring, sound ripples from voice, a second inner petal ring from mind, orbiting parts at body). the blossom shows the current stage.
 - **diary**: every entry gets a sha256 hash computed in the browser with the web crypto api, so any copy of an entry can be checked against the site.
 - **pages**: hash routes `#now`, `#desk`, `#stages`, `#diary`, plus deep links `#stage-N` and `#entry-NNN`.
 - **type**: Aeonik (CoType Foundry), the face fomo.family uses, with Albert Sans as the fallback until licensed `.woff2` files are added under `fonts/`.
@@ -117,7 +117,7 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
 - `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
-- bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block). set `cam` to `''` and the panel shows the blossom again; the stage previews always show the blossom.
+- bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block) as the live view, and nothing else: no stage previews. it joins the loop at the point the clock says, so a reload never starts it from the first frame. set `cam` to `''` and the panel shows the blossom at the current stage instead.
 - build-log posts are plain html in the `#desk` section of `index.html`.
 
 push to `main` and vercel deploys it.
