@@ -1,5 +1,5 @@
-// the site on this machine: the static files, plus api/eye.js answering at /api/eye.
-// frames sent to it are kept in memory only.
+// the site on this machine: the static files, plus api/eye.js at /api/eye and api/mind.js at /api/mind.
+// frames sent to the eye are kept in memory only. the mind stays asleep here, as it does on the site below 50 SOL.
 //
 //   EYE_KEY=anything npm run dev     then open http://127.0.0.1:47615
 
@@ -9,6 +9,7 @@ import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as eye from './api/eye.js';
+import * as mind from './api/mind.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 47615;
@@ -17,8 +18,10 @@ const TYPES = {
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.woff2': 'font/woff2',
 };
 
-async function api(req, res) {
-  const handler = eye[req.method];
+const APIS = { '/api/eye': eye, '/api/mind': mind };
+
+async function api(mod, req, res) {
+  const handler = mod[req.method];
   if (!handler) { res.writeHead(405).end(); return; }
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -51,6 +54,7 @@ async function file(req, res) {
 }
 
 http.createServer((req, res) => {
-  const work = req.url.split('?')[0] === '/api/eye' ? api(req, res) : file(req, res);
+  const mod = APIS[req.url.split('?')[0]];
+  const work = mod ? api(mod, req, res) : file(req, res);
   work.catch((e) => { console.error(e); if (!res.headersSent) res.writeHead(500); res.end(); });
 }).listen(port, '127.0.0.1', () => console.log(`bloom on http://127.0.0.1:${port}`));
