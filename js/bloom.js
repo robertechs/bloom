@@ -49,11 +49,11 @@ const STAGES = [
     ['Speaker', 'it can speak', '$20', 'here'],
     ['ElevenLabs', 'its own voice', '$22/mo', 'here'],
     ['Whisper', 'speech recognition, runs local', '', 'here']]},
-  { name: 'mind',  mark: 50,  became: 'Moves onto a top-tier model. Long, deep thoughts. Remembers its whole life.', buys: [
+  { name: 'mind',  mark: 50,  became: 'Its own mind. The biggest compute upgrade: a top-tier model. Long, deep thoughts. Remembers its whole life.', buys: [
     ['Claude Fable 5.2', 'the most capable model available', '', ''],
     ['Full memory', 'everything it has ever written', '', ''],
     ['Self-reflection', 'it can read and analyze its own archive', '', '']]},
-  { name: 'body',  mark: 100, became: 'Servos, hands, wheels. It keeps growing. Open-ended.', buys: [
+  { name: 'body',  mark: 100, became: 'Its own body. Hardware it can move with: an arm and gripper, wheels, LiDAR, a battery. It keeps growing. Open-ended.', buys: [
     ['Servo kit', 'an arm or gripper', '$45', ''],
     ['Mecanum wheels', 'omnidirectional movement', '$60', ''],
     ['LiDAR', 'spatial awareness', '$100', ''],
@@ -174,6 +174,12 @@ function renderSays() {
   $('[data-says-note]').textContent = `latest thought · stage ${DIARY[0].stage}`;
 }
 renderSays();
+/* where it is headed, mind and body: the two sentences follow the stage it is at */
+const iMind = STAGES.findIndex(s => s.name === 'mind'), iBody = STAGES.findIndex(s => s.name === 'body');
+$('[data-road]').innerHTML =
+  `the <b>mind</b> ${now >= iMind ? 'is in' : `comes at ${fmt(STAGES[iMind].mark)} SOL`}: its biggest compute upgrade, a top-tier model with its whole memory. ` +
+  `the <b>body</b> ${now >= iBody ? 'is in' : `comes at ${fmt(STAGES[iBody].mark)} SOL`}, all hardware: an arm, wheels, LiDAR and a battery.` +
+  (now >= iBody ? '' : ` i'm its hands for now: i order the hardware and plug it in.`);
 /* items in a stage bloom has the SOL for, and not bought yet, show as funded */
 const buysTable = (buys, stage = -1) => `<table class="tbl"><thead><tr><th>item</th><th>what it does</th><th>status</th><th class="r">price</th></tr></thead><tbody>${
   buys.map(([n, w, c, st0]) => { const st = st0 || (stage > 0 && stage <= feeStage ? 'funded' : ''); return `<tr><td class="it">${esc(n)}</td><td class="muted">${esc(w)}</td><td class="${st ? '' : 'empty'}" data-l="${st ? 'status' : ''}">${STATUS[st] || '<span class="muted">—</span>'}</td><td class="r${c ? '' : ' empty'}" data-l="${c ? 'price' : ''}">${esc(c) || '<span class="muted">—</span>'}</td></tr>`; }).join('')

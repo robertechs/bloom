@@ -60,6 +60,8 @@ code,.mono{font-family:var(--f-mono);font-size:.92em}
 .logo-name{display:block;font-weight:700;font-size:38px;letter-spacing:-.06em;line-height:1}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .intro .first{font-size:16px}
+.intro .road{font-size:14.5px}
+.intro .first b,.intro .road b{color:var(--tor-ink)}
 .acct{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:3px 12px;font-size:12.5px;border:1px solid var(--rule);background:var(--panel);padding:8px 12px;min-width:0}
 .acct dt{color:var(--mute)}
 .acct dd{font-family:var(--f-mono);font-size:12px;white-space:nowrap}
