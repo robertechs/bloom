@@ -281,12 +281,12 @@ reader.addEventListener('keydown', e => {
 const clip = (t, n) => t.length > n ? `${t.slice(0, n).replace(/\s+\S*$/, '')}…` : t;
 $('[data-latest]').innerHTML = `<table class="tbl"><thead><tr><th>board</th><th>latest</th><th class="r">items</th></tr></thead><tbody>
   <tr><td><a href="#diary">diary</a></td><td><a href="#entry-${no(0)}">#${no(0)}</a> ${esc(clip(DIARY[0].text, 90))}</td><td class="r" data-l="entries">${total}</td></tr>
-  <tr><td><a href="#desk">the desk</a></td><td><a href="#desk">#004</a> mic array + speaker: bloom gets ears with a compass</td><td class="r" data-l="parts">${DESK.length}</td></tr>
+  <tr><td><a href="#desk">the desk</a></td><td><a href="#desk">#005</a> they landed: xvf3800 + speaker plugged in, stage 4 complete</td><td class="r" data-l="parts">${DESK.length}</td></tr>
   <tr><td><a href="#stages">stages</a></td><td>${next ? `next: ${next.name} @ ${fmt(next.mark)} SOL` : 'past body'}</td><td class="r" data-l="stages">${STAGES.length}</td></tr>
 </tbody></table>`;
 $('[data-foot-state]').textContent = `stage ${now}, ${cur.name}${paidByDev ? ' (paid by dev)' : ''} · ${fmt(BLOOM.balance)} SOL fed`;
 if (lastDevStage > 0) $('#stages .lede').insertAdjacentHTML('beforeend', ` stages 1 to ${lastDevStage} were paid by dev.`);
-$('[data-foot-stats]').textContent = `${DIARY.length} diary entries · 4 build logs · ${here} parts in hand`;
+$('[data-foot-stats]').textContent = `${DIARY.length} diary entries · 5 build logs · ${here} parts in hand`;
 
 /* =====================================================================
    bloom.cam: the 3D blossom, glow from a real bloom pass, then dithered
