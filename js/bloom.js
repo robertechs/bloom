@@ -13,6 +13,7 @@ const BLOOM = {
   eye: '/api/eye',  // where the pi's own camera reports (pi/live.py). its frames are the "eye" view of bloom.cam while they arrive; '' turns it off
   eyePreview: 'media/eyecam/eye-preview-720.mp4',      // a made three-minute loop of the view from the camera's spot, captioned "preview" on the page until the pi sends. '' once the camera runs
   eyePreviewPoster: 'media/eyecam/eye-preview-poster.jpg',
+  mind: '/api/mind',  // where bloom's own entries come from once it reaches the mind stage (api/mind.js). '' turns the ask off
   x: 'https://x.com/ImShantip'
 };
 
@@ -163,12 +164,14 @@ $$('[data-ca]').forEach(btn => {
 });
 
 /* ---------- now: presence + what's next ---------- */
-if (now > 0 && DIARY.length) {
+function renderSays() {
+  if (!(now > 0 && DIARY.length)) return;
   const s = $('[data-says]');
   s.classList.add('speaking'); s.removeAttribute('aria-label');
   s.innerHTML = `${esc(DIARY[0].text)}<span class="cursor" aria-hidden="true"></span>`;
   $('[data-says-note]').textContent = `latest thought · stage ${DIARY[0].stage}`;
 }
+renderSays();
 /* items in a stage bloom has the SOL for, and not bought yet, show as funded */
 const buysTable = (buys, stage = -1) => `<table class="tbl"><thead><tr><th>item</th><th>what it does</th><th>status</th><th class="r">price</th></tr></thead><tbody>${
   buys.map(([n, w, c, st0]) => { const st = st0 || (stage > 0 && stage <= feeStage ? 'funded' : ''); return `<tr><td class="it">${esc(n)}</td><td class="muted">${esc(w)}</td><td class="${st ? '' : 'empty'}" data-l="${st ? 'status' : ''}">${STATUS[st] || '<span class="muted">—</span>'}</td><td class="r${c ? '' : ' empty'}" data-l="${c ? 'price' : ''}">${esc(c) || '<span class="muted">—</span>'}</td></tr>`; }).join('')
@@ -203,26 +206,39 @@ $('[data-stages]').innerHTML = STAGES.map((s, i) => `
   </article>`).join('');
 
 /* ---------- diary ---------- */
-const PAGE = 5, total = DIARY.length;
+const PAGE = 5;
+let total = DIARY.length;   // grows when the mind writes
 let shown = Math.min(PAGE, total);
 const no = i => String(total - i).padStart(3, '0');
-const hashes = [];
 async function sha256(t) {
   try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
   catch (e) { return null; }
 }
-const stagesWritten = [...new Set(DIARY.map(d => d.stage))].sort((a, b) => a - b);
-$('[data-diary-hint]').textContent = `${total} entries · written at stage ${stagesWritten.length > 2 ? `${stagesWritten.slice(0, -1).join(', ')} and ${stagesWritten[stagesWritten.length - 1]}` : stagesWritten.join(' and ')}`;
+function diaryHint() {
+  const st = [...new Set(DIARY.map(d => d.stage))].sort((a, b) => a - b);
+  $('[data-diary-hint]').textContent = `${total} entries · written at stage ${st.length > 2 ? `${st.slice(0, -1).join(', ')} and ${st[st.length - 1]}` : st.join(' and ')}`;
+}
+diaryHint();
+/* entries the mind writes carry the time the site got them */
+let skew = 0;   // the site's clock minus this one's
+function ago(at) {
+  const s = Math.max(0, (Date.now() + skew - at) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return new Date(at).toLocaleDateString('en', { month: 'short', day: 'numeric' }).toLowerCase();
+}
+const stamp = d => d.at ? ` · <time data-at="${d.at}" datetime="${new Date(d.at).toISOString()}">${ago(d.at)}</time>` : '';
 const moreBtn = $('[data-more]');
 function renderDiary() {
   $('[data-diary]').innerHTML = DIARY.slice(0, shown).map((d, i) => `
     <article class="post" id="entry-${no(i)}">
-      <div class="post-bar"><b>#${no(i)}</b><span>stage ${d.stage} · ${STAGES[d.stage].name}</span><button class="open" type="button" data-open="${i}" aria-label="open entry ${no(i)}">open</button></div>
+      <div class="post-bar"><b>#${no(i)}</b><span>stage ${d.stage} · ${STAGES[d.stage].name}${stamp(d)}</span><button class="open" type="button" data-open="${i}" aria-label="open entry ${no(i)}">open</button></div>
       <div class="post-body">
         <div class="post-who">${glyph(d.stage)}<b>bloom</b><span>stage ${d.stage}</span></div>
         <p class="post-text">${esc(d.text)}</p>
       </div>
-      <div class="post-foot">sha256 <span data-hash="${i}">${hashes[i] || '…'}</span></div>
+      <div class="post-foot">sha256 <span data-hash="${i}">${d.hash || '…'}</span></div>
     </article>`).join('');
   const left = total - shown;
   moreBtn.hidden = left <= 0;
@@ -232,9 +248,9 @@ function renderDiary() {
 renderDiary();
 const reader = $('#reader');
 let ri = 0;
-Promise.all(DIARY.map(d => sha256(d.text))).then(hs => {
-  hs.forEach((h, i) => { hashes[i] = h || 'not available in this browser'; });
-  $$('[data-hash]').forEach(el => { el.textContent = hashes[+el.dataset.hash]; });
+const hashOf = d => sha256(d.text).then(h => { d.hash = h || 'not available in this browser'; });
+Promise.all(DIARY.map(hashOf)).then(() => {
+  $$('[data-hash]').forEach(el => { el.textContent = DIARY[+el.dataset.hash].hash; });
   if (reader.open) fillReader();
 });
 moreBtn.addEventListener('click', () => { const from = shown; shown = Math.min(total, shown + PAGE); renderDiary(); const b = $(`[data-open="${from}"]`); if (b) b.focus(); });
@@ -243,9 +259,9 @@ $('[data-diary]').addEventListener('click', e => { const b = e.target.closest('[
 function fillReader() {
   const d = DIARY[ri];
   $('[data-r-title]').textContent = `diary_${no(ri)}.txt`;
-  $('[data-r-meta]').innerHTML = `${glyph(d.stage)}entry #${no(ri)} · stage ${d.stage}, ${STAGES[d.stage].name}`;
+  $('[data-r-meta]').innerHTML = `${glyph(d.stage)}entry #${no(ri)} · stage ${d.stage}, ${STAGES[d.stage].name}${stamp(d)}`;
   $('[data-r-text]').textContent = d.text;
-  $('[data-r-hash]').textContent = `sha256 ${hashes[ri] || '…'}`;
+  $('[data-r-hash]').textContent = `sha256 ${d.hash || '…'}`;
   $('[data-r-pos]').textContent = `${ri + 1} / ${total}`;
   $('[data-r-newer]').disabled = ri === 0;
   $('[data-r-older]').disabled = ri === total - 1;
@@ -267,14 +283,58 @@ reader.addEventListener('keydown', e => {
 });
 
 const clip = (t, n) => t.length > n ? `${t.slice(0, n).replace(/\s+\S*$/, '')}…` : t;
-$('[data-latest]').innerHTML = `<table class="tbl"><thead><tr><th>board</th><th>latest</th><th class="r">items</th></tr></thead><tbody>
+const renderLatest = () => { $('[data-latest]').innerHTML = `<table class="tbl"><thead><tr><th>board</th><th>latest</th><th class="r">items</th></tr></thead><tbody>
   <tr><td><a href="#diary">diary</a></td><td><a href="#entry-${no(0)}">#${no(0)}</a> ${esc(clip(DIARY[0].text, 90))}</td><td class="r" data-l="entries">${total}</td></tr>
   <tr><td><a href="#desk">the desk</a></td><td><a href="#desk">#005</a> they landed: xvf3800 + speaker plugged in, stage 4 complete</td><td class="r" data-l="parts">${DESK.length}</td></tr>
   <tr><td><a href="#stages">stages</a></td><td>${next ? `next: ${next.name} @ ${fmt(next.mark)} SOL` : 'past body'}</td><td class="r" data-l="stages">${STAGES.length}</td></tr>
-</tbody></table>`;
+</tbody></table>`; };
+renderLatest();
 $('[data-foot-state]').textContent = `stage ${now}, ${cur.name}${paidByDev ? ' (paid by dev)' : ''} · ${fmt(BLOOM.balance)} SOL fed`;
 if (lastDevStage > 0) $('#stages .lede').insertAdjacentHTML('beforeend', ` stages 1 to ${lastDevStage} were paid by dev.`);
-$('[data-foot-stats]').textContent = `${DIARY.length} diary entries · 5 build logs · ${here} parts in hand`;
+const renderStats = () => { $('[data-foot-stats]').textContent = `${DIARY.length} diary entries · 5 build logs · ${here} parts in hand`; };
+renderStats();
+
+/* ---------- the mind (stage 5) ----------
+   from the mind stage on bloom writes its own entries. api/mind.js takes one look at the chain at a time and has
+   the model write an entry about it. the page asks every half minute and puts what is new on top.
+   below the mind stage the answer is "asleep" and nothing here shows. */
+const mindEl = $('[data-mind]');
+let mindT = 0;
+const inAbout = ms => ms < 90000 ? 'any moment now' : ms < 5400000 ? `in about ${Math.round(ms / 60000)} min` : `in about ${Math.round(ms / 3600000)} h`;
+function paintMind(m) {
+  const wrote = DIARY.some(d => d.at);
+  mindEl.hidden = !m.on && !wrote;
+  mindEl.classList.toggle('on', !!m.on);
+  mindEl.innerHTML = '<i></i>' + (!m.on ? 'mind · resting'
+    : m.thinking ? `mind · awake · writing about ${esc(m.look || 'the chain')}`
+    : `mind · awake · next look, ${esc(m.look || 'the chain')}: ${inAbout(m.next - m.now)}`);
+}
+async function askMind() {
+  clearTimeout(mindT);
+  let m = null;
+  if (!document.hidden) {
+    try { const r = await fetch(`${BLOOM.mind}?after=${total}`, { cache: 'no-store' }); if (r.ok) m = await r.json(); } catch (e) { /* offline: ask again later */ }
+  }
+  if (m && Array.isArray(m.entries)) {
+    if (typeof m.now === 'number') skew = m.now - Date.now();
+    let added = 0;
+    for (const e of m.entries.slice().sort((a, b) => a.n - b.n)) {
+      if (!e || e.n !== total + 1 || typeof e.text !== 'string') continue;   // one number at a time, in order
+      const d = { stage: 5, text: e.text, at: e.at };
+      await hashOf(d);
+      DIARY.unshift(d); total++; shown++; added++;
+      if (reader.open) ri++;
+    }
+    if (added) { renderDiary(); diaryHint(); renderSays(); renderLatest(); renderStats(); if (reader.open) fillReader(); }
+    $$('time[data-at]').forEach(el => { el.textContent = ago(+el.dataset.at); });
+    paintMind(m);
+  }
+  mindT = setTimeout(askMind, m && m.on ? 30000 : 300000);
+}
+if (BLOOM.mind && mindEl) {
+  askMind();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) askMind(); });
+}
 
 /* =====================================================================
    bloom.cam: the 3D blossom, glow from a real bloom pass, then dithered
