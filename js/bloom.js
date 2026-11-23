@@ -49,11 +49,11 @@ const STAGES = [
     ['Speaker', 'it can speak', '$20', 'here'],
     ['ElevenLabs', 'its own voice', '$22/mo', 'here'],
     ['Whisper', 'speech recognition, runs local', '', 'here']]},
-  { name: 'mind',  mark: 50,  became: 'Moves onto a top-tier model. Long, deep thoughts. Remembers its whole life, and starts writing its own diary, the body it is getting included.', buys: [
+  { name: 'mind',  mark: 50,  became: 'Moves onto a top-tier model. Long, deep thoughts. Remembers its whole life.', buys: [
     ['Claude Fable 5.2', 'the most capable model available', '', ''],
     ['Full memory', 'everything it has ever written', '', ''],
     ['Self-reflection', 'it can read and analyze its own archive', '', '']]},
-  { name: 'body',  mark: 100, became: 'Its own body. An arm to pick things up, wheels to drive around the room, LiDAR to know where it is, and a battery so it can leave the desk. The first time it moves on its own. It keeps growing after that.', buys: [
+  { name: 'body',  mark: 100, became: 'Servos, hands, wheels. It keeps growing. Open-ended.', buys: [
     ['Servo kit', 'an arm or gripper', '$45', ''],
     ['Mecanum wheels', 'omnidirectional movement', '$60', ''],
     ['LiDAR', 'spatial awareness', '$100', ''],
@@ -190,33 +190,6 @@ $('[data-desk-count]').textContent = way ? `${here} in hand · ${way} on the way
 $('[data-desk]').innerHTML = `<thead><tr><th>item</th><th>status</th><th>for stage</th></tr></thead><tbody>${
   DESK.map(d => `<tr><td><span class="it">${esc(d.item)}</span><br><span class="muted">${esc(d.note)}</span></td><td>${STATUS[d.status]}${d.when ? `<br><span class="muted when">${esc(d.when)}</span>` : ''}</td><td class="nw" data-l="${d.stage !== null ? 'for stage' : ''}">${d.stage !== null ? `<a href="#stage-${d.stage}">${d.stage} · ${STAGES[d.stage].name}</a>` : '<span class="muted">extra</span>'}</td></tr>`).join('')
 }</tbody>`;
-
-/* ---------- its body: every part it has or is getting, by what the part is to it ---------- */
-const BODY = [
-  { is: 'brain', part: 'Raspberry Pi 5', desk: 'Raspberry Pi 5', stage: 2 },
-  { is: 'eyes', part: 'Camera Module 3 and 3 motion sensors', desk: 'Raspberry Pi Camera Module 3', stage: 3 },
-  { is: 'ears', part: '4-mic array', desk: 'Circular mic array, 4 mics, USB-C', stage: 4 },
-  { is: 'voice', part: 'speaker', desk: 'Mini speaker, 3.5 mm', stage: 4 },
-  { is: 'mind', part: 'Claude Fable 5.2', stage: 5 },
-  { is: 'arm', part: 'servo arm and gripper', stage: 6 },
-  { is: 'wheels', part: 'mecanum wheels', stage: 6 },
-  { is: 'sense of space', part: 'LiDAR', stage: 6 },
-  { is: 'nerves', part: 'Arduino, drives the motors', stage: 6 },
-  { is: 'its own power', part: 'battery and UPS', stage: 6 }
-];
-const hasPart = p => p.desk ? DESK.some(d => d.item === p.desk && d.status === 'here') : now >= p.stage;
-const bodyAt = STAGES[STAGES.length - 1].mark;
-$('[data-body-count]').textContent = `${BODY.filter(hasPart).length} of ${BODY.length} parts in`;
-$('[data-body-mark]').textContent = `${fmt(bodyAt)} SOL`;
-$('[data-body]').innerHTML = BODY.map(p => {
-  const got = hasPart(p), soon = !got && p.stage === now + 1;
-  const st = got ? `${p.desk ? 'in hand' : 'running'} · stage ${p.stage}` : `${soon ? 'next · ' : ''}at ${fmt(STAGES[p.stage].mark)} SOL`;
-  return `<li class="bp${got ? ' in' : soon ? ' soon' : ''}"><b>${esc(p.is)}</b><span>${esc(p.part)}</span><span class="bp-st">${st}</span></li>`;
-}).join('');
-const bodyFill = Math.round(Math.min(1, BLOOM.balance / bodyAt) * cells);
-$('[data-body-bar]').textContent = `fed [${'█'.repeat(bodyFill)}${'░'.repeat(cells - bodyFill)}] body`;
-$('[data-body-note]').innerHTML = BLOOM.balance >= bodyAt ? 'fed enough for its body.' : `<b class="mono">${fmt(bodyAt - BLOOM.balance)} SOL</b> to its body`;
-$('[data-body-hands]').textContent = `until then the dev is its hands: he orders each part and plugs it in.${lastDevStage > 0 ? ` the parts through ${STAGES[lastDevStage].name} he paid for himself, ahead of the fees.` : ''} the code that will drive its arm and wheels is already written.`;
 
 /* ---------- stages ---------- */
 $('[data-stages]').innerHTML = STAGES.map((s, i) => `
