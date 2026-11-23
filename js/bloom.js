@@ -124,7 +124,7 @@ $$('[data-glyph-current]').forEach(el => { el.outerHTML = glyph(now); });
 $('[data-acct-stage]').innerHTML = `<b>${now}</b> · ${cur.name}${nowByDev ? ` ${DEV_TAG}` : ''}`;
 $('[data-acct-fed]').innerHTML = `<b>${fmt(BLOOM.balance)}</b> SOL${fromDev ? ` ${DEV_PART}` : ''}`;
 $('[data-acct-next]').textContent = next ? `${next.name} @ ${fmt(next.mark)} SOL` : 'open-ended';
-$('[data-acct-ca]').textContent = BLOOM.contract ? `${BLOOM.contract.slice(0, 4)}…${BLOOM.contract.slice(-4)}` : 'token not live yet';
+$('[data-acct-ca]').textContent = 'token not live yet';
 $('[data-now-meta]').textContent = `stage ${now} · ${cur.name}`;
 
 $('[data-st-stage]').innerHTML = `${glyph(now)} ${now} · ${cur.name}${nowByDev ? ` ${DEV_TAG}` : ''}`;
@@ -149,15 +149,32 @@ const COPY = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5
 const toast = $('[data-toast]'); let toastT;
 const say = m => { toast.textContent = m; toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 1800); };
 const selectText = el => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+/* older and in-app browsers (x, telegram) may have no clipboard api: copy through a hidden textarea */
+const copyOld = text => {
+  const t = document.createElement('textarea');
+  t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(t); t.select(); t.setSelectionRange(0, text.length);
+  let ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* not allowed */ }
+  t.remove(); return ok;
+};
+const copyCA = async (btn, label) => {
+  let ok = false;
+  try { await navigator.clipboard.writeText(BLOOM.contract); ok = true; } catch (e) { ok = copyOld(BLOOM.contract); }
+  if (!ok) { selectText(btn.querySelector('.ca-text') || btn); say('select and copy the address'); return; }
+  say('contract address copied');
+  if (label) { label.textContent = 'copied'; btn.classList.add('done'); clearTimeout(btn._t); btn._t = setTimeout(() => { label.textContent = 'copy'; btn.classList.remove('done'); }, 1600); }
+};
+if (BLOOM.contract) {
+  const acct = $('[data-acct-ca]');
+  acct.innerHTML = `<button class="ca-mini" type="button" title="copy contract address" aria-label="copy contract address ${esc(BLOOM.contract)}"><span class="ca-text">${esc(BLOOM.contract.slice(0, 4))}…${esc(BLOOM.contract.slice(-4))}</span>${COPY}</button>`;
+  acct.firstChild.addEventListener('click', e => copyCA(e.currentTarget));
+}
 $$('[data-ca]').forEach(btn => {
   if (BLOOM.contract) {
     btn.classList.add('set');
-    btn.innerHTML = `<span class="ca-text">${esc(BLOOM.contract)}</span>${COPY}`;
+    btn.innerHTML = `<span class="ca-text">${esc(BLOOM.contract)}</span><span class="ca-copy">${COPY}<span data-ca-label>copy</span></span>`;
     btn.setAttribute('aria-label', `copy contract address ${BLOOM.contract}`);
-    btn.addEventListener('click', () => {
-      try { navigator.clipboard.writeText(BLOOM.contract).then(() => say('contract address copied'), () => { selectText(btn); say('select and copy the address'); }); }
-      catch (e) { selectText(btn); }
-    });
+    btn.addEventListener('click', () => copyCA(btn, btn.querySelector('[data-ca-label]')));
   } else {
     btn.innerHTML = `<span class="ca-text">token not live yet</span>${COPY}`;
     btn.setAttribute('aria-disabled', 'true');

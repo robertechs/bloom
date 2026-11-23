@@ -146,6 +146,14 @@ code,.mono{font-family:var(--f-mono);font-size:.92em}
 .ca.set{border-style:solid;color:var(--text);cursor:copy}
 .ca .ca-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ca.set .ca-text{white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+.ca-copy{display:inline-flex;align-items:center;gap:5px;flex:none;margin-left:auto;padding:3px 8px;background:var(--tor);color:#fff;font-family:var(--f-ui);font-size:12px;font-weight:600}
+.ca-copy svg{margin-left:0}
+.ca-copy [data-ca-label]{display:inline-block;min-width:3.6em}
+.ca.set:hover .ca-copy{background:var(--tor-dark)}
+.ca.done .ca-copy{background:var(--tor-ink)}
+.ca-mini{display:inline-flex;align-items:center;gap:5px;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:copy}
+.ca-mini svg{width:12px;height:12px;color:var(--tor)}
+.ca-mini:hover .ca-text{text-decoration:underline}
 .side-links{display:grid}
 .side-links a{display:flex;justify-content:space-between;gap:8px;padding:6px 12px;border-top:1px solid var(--rule);font-size:13px}
 .side-links li:first-child a{border-top:0}
