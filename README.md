@@ -56,7 +56,7 @@ the build log with photos is on the site under `the desk`, mirrored from x.
 
 ## the site
 
-a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework, no build step, no backend. vercel serves the repo as-is, and the numbers come from `data/bloom.json`.
+a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework and no build step. vercel serves the repo as-is, and the numbers come from `data/bloom.json`. the one part that is not a file is `api/eye.js`, a single function that receives what the pi's camera sees (see [the eye](#the-eye)).
 
 - **bloom.cam**: the live view is a three.js r147 scene loaded from jsDelivr. petals are a custom vertex/fragment shader (cup, curl and vein shading), stamens are instanced meshes, and an `UnrealBloomPass` gives the glow. a final shader pass dithers the frame with a 4x4 bayer matrix down to five colours, like an old low-bandwidth feed.
 - **stage looks**: each stage has its own parameters (petal opening, scale, glow, mote count, halo ring, sound ripples from voice, a second inner petal ring from mind, orbiting parts at body). the blossom shows the current stage.
@@ -64,6 +64,14 @@ a static page (`index.html`, `css/bloom.css`, `js/bloom.js`). no framework, no b
 - **pages**: hash routes `#now`, `#desk`, `#stages`, `#diary`, plus deep links `#stage-N` and `#entry-NNN`.
 - **type**: Aeonik (CoType Foundry), the face fomo.family uses, with Albert Sans as the fallback until licensed `.woff2` files are added under `fonts/`.
 - respects `prefers-reduced-motion`. works down to phone width.
+
+run it locally, with the function and without a vercel account:
+
+```sh
+npm ci
+EYE_KEY=anything npm run dev   # http://127.0.0.1:47615
+npm test
+```
 
 ## feeder
 
@@ -100,6 +108,53 @@ journalctl -u bloom-eyes -f
 
 `vision.py` is the next layer for eyes: it reads camera frames, finds motion with OpenCV background subtraction (MOG2), checks the moving regions for faces with a Haar cascade, and saves annotated frames and a `vision.jsonl` log.
 
+`live.py` is the same looking, sent to the site instead of saved: see below.
+
+## the eye
+
+bloom.cam has a second view, `eye`: what the pi's own camera sees, as it sees it. the desk loop stays the default. the `desk | eye` switch under the cam is only there while real frames are arriving, so with the pi off the site looks exactly as it does without any of this.
+
+how a frame travels:
+
+1. `pi/live.py` reads the Camera Module 3 about five times a second, finds what moves (MOG2) and faces that look toward the camera (Haar cascade), draws a violet box around movement and a pink one around faces, and pixelates the faces.
+2. it sends a 480x270 picture to `POST /api/eye` with the key: every 30 s when the room is still, every 5 s while something moves or a PIR sensor trips.
+3. `api/eye.js` checks the key, stamps the frame with the time **the site** received it, and keeps only that newest frame in vercel's runtime cache. nothing is archived, on the pi or on the site.
+4. the page asks `GET /api/eye`, shows the frame with how many seconds old it is, and says what the pi found in it: `1 face in view`, `something moving`, `nothing moving`, and which sensor tripped.
+
+when frames stop, the view says `eye closed · last frame HH:MM:SS` and greys the picture, and for anyone on the desk view the switch goes away. the site never shows an old frame as a current one, and the stored frame deletes itself ten minutes after the last one arrived.
+
+### turning it on
+
+1. in the vercel project, settings > environment variables: add `EYE_KEY` for production, any long random string (`openssl rand -hex 32`), then redeploy. without it the function refuses every frame.
+2. plug the camera in: the CSI ribbon's 22-pin end goes in the pi 5, contacts facing the board, the 15-pin end in the camera.
+3. on the pi:
+
+```sh
+git pull
+cd pi && bash setup-live.sh
+journalctl -u bloom-live -f
+```
+
+`setup-live.sh` asks for the key once (kept in `~/.config/bloom/eye.env`, readable only by you), installs picamera2 and OpenCV, writes one frame to `~/bloom/eye-preview` so you can look at exactly what would go public, and only sends anything after you answer `y`. then it runs `live.py` as the `bloom-live` service. it takes the camera over from `bloom-eyes`.
+
+turn it off with `sudo systemctl disable --now bloom-live`. to take the view off the site altogether, set `eye` to `''` in the `BLOOM` block of `js/bloom.js`.
+
+### what becomes public
+
+everything in the frame. the pi pixelates the faces it finds, and it only finds faces that look toward the camera: a face in profile, far away or in bad light goes out as it is, and so does everything else in view (screens, papers, the room). point the camera where that is fine and look at the preview frame first. `--faces show` sends faces unblurred.
+
+### what it costs
+
+the frame lives in vercel's runtime cache, which is counted in 8 kB units. `live.py` keeps each frame under 5.6 kB, so a frame is one unit to write and one to read:
+
+| | default | a month |
+| --- | --- | --- |
+| frames when nothing moves | `--every 30` | 86,400 writes |
+| frames in any 24 hours, movement included | `--per-day 6000` | at most 180,000 writes |
+| reads | answers wait 4 s at the CDN (20 s while the eye is closed) | one per 4 s per CDN region that has visitors |
+
+that fits the hobby plan's allowance (200,000 writes and 1,000,000 reads a month). past the allowance vercel pauses the cache until the month turns: the eye reads as closed and the site shows the desk, nothing else breaks. `--every`, `--burst`, `--per-day`, `--size` and `--max-kb` are the knobs, e.g. `--every 60` halves the idle writes.
+
 ## the body
 
 `firmware/body/body.ino` is the Arduino firmware for stage 6: mecanum drive on four DC motors (two TB6612FNG drivers) plus an arm and gripper servo. it takes line commands from the pi over USB serial at 115200 baud:
@@ -118,6 +173,7 @@ a 500 ms watchdog stops the wheels if the pi goes quiet. `pi/body.py` is the pi 
 - the balance and contract come from `data/bloom.json`. the feeder writes it, or edit it by hand.
 - `STAGES` (marks and purchases), `DESK` (parts in hand) and `DIARY` (entries, newest first) are at the top of `js/bloom.js`. the `BLOOM` block there holds the fallback numbers if `data/bloom.json` can't be read.
 - bloom.cam plays the desk loop in `media/deskcam/` (`cam` and `camPoster` in the `BLOOM` block) as the live view, and nothing else: no stage previews. it joins the loop at the point the clock says, so a reload never starts it from the first frame. set `cam` to `''` and the panel shows the blossom at the current stage instead.
+- the `eye` view next to it shows frames from `pi/live.py` and only appears while they arrive (`eye` in the `BLOOM` block is where the page asks, `''` turns it off).
 - build-log posts are plain html in the `#desk` section of `index.html`.
 
 push to `main` and vercel deploys it.
@@ -128,10 +184,14 @@ push to `main` and vercel deploys it.
 index.html                  page markup
 css/bloom.css               styles
 js/bloom.js                 stages, desk, diary, router, and the three.js cam with its shaders
+api/eye.js                  the one function: takes frames from the pi, hands the newest to the page
+dev.js                      local server: the static files plus api/eye.js
+test/                       node tests for api/eye.js
+media/deskcam/              the desk loop bloom.cam plays, its poster and stills
 data/bloom.json             live numbers, written by the feeder
 feeder/                     typescript: reads the fee wallet over solana json-rpc
 .github/workflows/fees.yml  runs the feeder every 15 minutes
-pi/                         python + shell for the pi 5: camera, PIR sensors, vision, body link
+pi/                         python + shell for the pi 5: camera, PIR sensors, vision, the live eye, body link
 firmware/body/              arduino (c++) firmware for the mecanum base and servo arm
 img/                        desk photos (webp)
 favicon.svg                 the bloom flower
