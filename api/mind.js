@@ -261,9 +261,17 @@ function prompt(s, look, facts, choices) {
 
 const numbers = (text) => (text.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).map((x) => String(Number(x.replace(/,/g, ''))));
 
+/* an entry that runs long, or was cut off at the token limit, keeps its full sentences up to the length limit */
+export function fit(text, cutOff = false) {
+  if (text.length <= 340 && !cutOff) return text;
+  const head = text.slice(0, 341);
+  const end = Math.max(...['. ', '? ', '! '].map((p) => head.lastIndexOf(p)), /[.?!]$/.test(head.slice(0, 340)) ? head.slice(0, 340).length - 1 : -1);
+  return end >= 29 ? head.slice(0, end + 1) : text;
+}
+
 /* why an entry cannot go in the diary, or '' when it can */
 export function flaw(text, allowed) {
-  if (text.length < 30 || text.length > 340) return 'wrong length';
+  if (text.length < 30 || text.length > 340) return `wrong length (${text.length})`;
   if (/https?:|www\.|@|#(?!\d{3}\b)|[\w-]+\.(com|io|org|net|xyz|tech|app)\b/i.test(text)) return 'a link or a tag';
   if (/[1-9A-HJ-NP-Za-km-z]{32,}/.test(text)) return 'an address';
   const made = numbers(text.replace(/#\d{3}\b/g, '')).find((x) => !allowed.has(x)); // #012 names an entry
@@ -293,7 +301,7 @@ async function ask(model, content) {
   // the site says fable 5.2: an answer from anything else does not go in the diary
   if (!/fable-5[-.]2/.test(out.model ?? '')) throw new Trouble('model: the answer did not come from claude fable 5.2', { used, wait: 6 * 60 * MINUTE });
   const text = (out.content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
-  return { text, used, model, saidBy: out.model };
+  return { text, used, model, saidBy: out.model, cutOff: out.stop_reason === 'max_tokens' };
 }
 
 /* ---------- one look ---------- */
@@ -323,7 +331,7 @@ export async function step() {
     used = said.used;
     const lines = said.text.split('\n').map((l) => l.trim()).filter(Boolean);
     const wants = (lines.find((l) => /^next:/i.test(l)) ?? '').slice(5).trim().toLowerCase();
-    const text = lines.filter((l) => !/^next:/i.test(l)).join(' ').replace(/^["“]|["”]$/g, '').trim();
+    const text = fit(lines.filter((l) => !/^next:/i.test(l)).join(' ').replace(/^["“]|["”]$/g, '').trim(), said.cutOff && !wants);
     const n = ARCHIVE.length + s.entries.length + 1;
     const known = [...facts, ...(s.seen[look]?.facts ?? []), ...ARCHIVE.map((d) => d.text), ...s.entries.map((e) => e.text), `${MARK} 5 5.2 ${n}`];
     const why = flaw(text, new Set(known.flatMap(numbers)));

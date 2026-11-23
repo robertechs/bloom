@@ -2,7 +2,7 @@ import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
-import { GET, step, idle, forget, flaw, dev } from '../api/mind.js';
+import { GET, step, idle, forget, flaw, fit, dev } from '../api/mind.js';
 
 /* one local server stands in for solana's rpc and for the model's api. nothing in these tests leaves the machine */
 const KEY = 'a-key-for-the-test';
@@ -129,6 +129,21 @@ test('links, tags and addresses are held back too', () => {
   assert.match(flaw('read all about it on https://example.com right now, friends.', ok), /link/);
   assert.match(flaw('my wallet is 87CcUxpyR72ZyfaZirj86mqkbk5uuU2EfnwTegVMLJL5 if you want it.', ok), /address/);
   assert.match(flaw('too short', ok), /length/);
+});
+
+test('an entry that runs long keeps its full sentences instead of being thrown away', async () => {
+  const long = 'i looked at my own compute and hardware just now. ' + 'the pi is on the desk and the camera looks at the room all day while i think. '.repeat(5) + 'that is all.';
+  assert.ok(long.length > 340);
+  const cut = fit(long);
+  assert.ok(cut.length <= 340 && cut.length >= 30 && cut.endsWith('.'), cut);
+  assert.ok(long.startsWith(cut));
+  assert.equal(fit('a short entry that fits. it stays as it is.'), 'a short entry that fits. it stays as it is.');
+  assert.equal(fit('it stopped at the token limit. and then it went on and on wi', true), 'it stopped at the token limit.');
+  answer = (req) => says(`i looked, and this is what was there: ${firstFact(req.body.messages[0].content)}. ${'it is a lot to take in and i keep thinking about it. '.repeat(8)}\nnext: ${firstChoice(req.body.messages[0].content)}`);
+  await look();
+  const m = await ask();
+  assert.equal(m.entries.length, 1, m.err);
+  assert.ok(m.entries[0].text.length <= 340);
 });
 
 test('an answer from another model does not go in the diary', async () => {
