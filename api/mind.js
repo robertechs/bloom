@@ -70,8 +70,10 @@ async function write(state, etag) {
     const rule = etag === undefined ? { allowOverwrite: false } : { ifMatch: etag };
     return (await put(FILE, text, { access: 'private', addRandomSuffix: false, contentType: 'application/json', ...rule })).etag;
   } catch (e) {
-    if (e instanceof BlobPreconditionFailedError || (etag === undefined && /already exists/i.test(e.message))) return false;
-    throw e;
+    // somebody else wrote first: the etag no longer matches, the file is already there, or two writes met half way.
+    // anything else is the store itself failing. either way this write did not happen
+    if (!(e instanceof BlobPreconditionFailedError) && !/already exists/i.test(e.message)) console.error(`mind store: ${e.message}`);
+    return false;
   }
 }
 
