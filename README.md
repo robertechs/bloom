@@ -114,7 +114,7 @@ journalctl -u bloom-eyes -f
 
 bloom.cam has a second view, `eye`: what the pi's own camera sees, as it sees it. the desk loop stays the default, and the `desk | eye` switch under the cam is always there.
 
-until the pi sends its first frame, `eye` plays a preview: `media/eyecam/eye-preview-720.mp4`, a made one-minute loop of the Raspberry Pi Camera Module 3's point of view from its spot on the desk. the camera did not take it, and the caption under it says so: `Raspberry Pi Camera Module 3 pov · preview until it's wired in`. the picture itself carries only the view's name, `bloom.eye`. nothing of it is downloaded until somebody presses `eye`. the moment a real frame arrives, the real view takes its place. how the loop was made is in `media/eyecam/review.md`.
+until the pi sends its first frame, `eye` plays a preview: `media/eyecam/eye-preview-720.mp4`, a made one-minute loop of the Raspberry Pi Camera Module 3's point of view from its spot on the desk. the camera did not take it. the caption under it reads `Raspberry Pi Camera Module 3 pov`, and the picture itself carries only the view's name, `bloom.eye`. nothing of it is downloaded until somebody presses `eye`. the moment a real frame arrives, the real view takes its place. how the loop was made is in `media/eyecam/review.md`.
 
 how a frame travels:
 

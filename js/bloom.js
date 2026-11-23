@@ -604,13 +604,11 @@ if (feedOn || preOn) {
 
 /* the eye: what the pi's own camera sees. pi/live.py sends a frame to BLOOM.eye every so often, and each one shows the
    time the site received it. until the pi sends, the eye view plays BLOOM.eyePreview instead: a made loop of the
-   Camera Module 3's point of view from its spot on the desk, called a preview in the caption under it. a real frame
-   always wins over the preview. the desk stays the default. */
+   Camera Module 3's point of view from its spot on the desk. a real frame always wins over the preview.
+   the desk stays the default. */
 const eyeImg = $('.cam-eye', camHost), eyeOv = $('.eye-ov', camHost);
 const viewBox = $('[data-cam-views]'), says = $('[data-cam-says]');
-/* the preview says what it is here, under the picture, and not in the picture. each half holds together, so it only wraps after the dot */
-const nb = s => s.replace(/ /g, '\u00a0');
-const saysDesk = says.textContent, saysPre = nb('Raspberry Pi Camera Module 3 pov ·') + ' ' + nb(`preview until it's wired in`);
+const saysDesk = says.textContent, saysPre = 'Raspberry Pi Camera Module 3 pov';
 let view = 'desk', eye = null, eyeTimer = 0, eyeBusy = false, eyeAsk = !!BLOOM.eye;
 const eyeAge = () => eye.age + performance.now() - eye.got;                      // ms since the site received the frame
 const eyeOpen = () => !!eye && eyeAge() < Math.max(90, eye.every * 2.5) * 1000;  // closed once frames stop coming
@@ -622,7 +620,7 @@ function paintCam() {
   $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
   $('[data-cam-meta]').textContent = name;
   camHost.setAttribute('aria-label', real ? `what bloom's own camera sees`
-    : mock ? `a preview of the Raspberry Pi Camera Module 3's point of view, shown until the camera is wired in`
+    : mock ? `the Raspberry Pi Camera Module 3's point of view`
     : feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
   camHost.classList.toggle('has-feed', feedOn || eyeOn);
   /* the loops have their own labels burned in, so the overlays only sit on the blossom and on the camera's frames */

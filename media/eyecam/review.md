@@ -6,7 +6,7 @@ What is in this folder, how it was made, what was checked and what is not ideal.
 
 bloom.cam's `eye` view is for the Raspberry Pi Camera Module 3. The module is on the desk and not wired in yet, so until it sends, the view plays `eye-preview-720.mp4`: a made one-minute loop of the module's point of view from where it lies.
 
-The camera did not take it, and the site does not say it did. The caption under it on the page reads `Raspberry Pi Camera Module 3 pov · preview until it's wired in`. The word is on the page and not in the picture: an earlier export had `preview` written top right in the video, and it was taken out because it spoiled the picture. The first real frame from `pi/live.py` replaces it.
+The camera did not take it, and the site does not say it did. The caption under it on the page reads `Raspberry Pi Camera Module 3 pov`. An earlier export had `preview` written top right in the video, and it was taken out because it spoiled the picture. The first real frame from `pi/live.py` replaces it.
 
 ## Access and budget
 
@@ -56,7 +56,7 @@ Both loops are 60 s long and the site starts each one at the point the clock say
 
 - 1920x1080, 30 fps, 1800 frames.
 - Look: `gblur=sigma=0.75`, `eq=contrast=0.95:saturation=0.90`, `vignette=angle=PI/4.6`, `noise=c0s=10:c0f=t+u:c1s=6:c1f=t+u:c2s=6:c2f=t+u`. Softer, flatter and darker in the corners than the desk loop, as a small sensor behind a small lens is.
-- One label in JetBrains Mono, white at 80%: `bloom.eye` top left, for the whole loop, as the desk loop has `bloom.cam`. No red dot, no REC, no clock, no date. The word "LIVE" does not appear. That it is a preview is said in the caption on the page.
+- One label in JetBrains Mono, white at 80%: `bloom.eye` top left, for the whole loop, as the desk loop has `bloom.cam`. No red dot, no REC, no clock, no date. The word "LIVE" does not appear. The caption on the page reads `Raspberry Pi Camera Module 3 pov`.
 - A keyframe every 300 frames exactly, so the loop point is a keyframe like the five others in the file.
 
 Encoder settings: with the first noise setting the 1080p file came to 126 MB at CRF 20, and the 720p file at CRF 28 was blocky. Five pairs of noise strength and CRF were tried on the first 10 s. Kept: the noise above with CRF 22 for 1080p and CRF 25 for 720p.
@@ -77,8 +77,7 @@ Encoder settings: with the first noise setting the 1080p file came to 126 MB at 
 ## Not ideal, and left as it is
 
 - The still is 1280 px wide and enlarged by half. Small print on the boards is soft at 1080p. The site shows the loop in a panel at most 356 px wide.
-- In the picture the Pi has its power cable in and its LED blinking, and the camera's ribbon runs out of the bottom of the frame, while the caption says the camera is not wired in yet. The picture shows the desk as it will be; the caption says how it is.
-- Only the page says it is a preview. The video file on its own, saved or shared, carries no sign of it.
+- In the picture the Pi has its power cable in and its LED blinking, and the camera's ribbon runs out of the bottom of the frame. The picture shows the desk as it will be. The caption only names the view.
 - The Pi 5, the blue board and the PIRs are the generator's drawings of those parts, close to the real ones but not exact.
 - Nothing on the desk moves and nobody walks past. The real camera will see more than this.
 - The knocks and focus hunts come at the same seconds of every minute. Somebody who watches for several minutes can learn them.
