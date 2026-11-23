@@ -52,6 +52,7 @@ beforeEach(async (t) => {
   asked.length = 0;
   answer = plain;
   dev.fed = 50.03;
+  dev.paused = false;
   process.env.ANTHROPIC_API_KEY = KEY;
   delete process.env.MIND_MODEL;
   t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
@@ -63,6 +64,16 @@ test('asleep below the mark: nothing is read and the model is not called', async
   assert.deepEqual([m.on, m.entries], [false, []]);
   assert.match(m.why, /asleep until 50 SOL/);
   assert.equal(asked.length, 0);
+});
+
+test('paused, it makes no model calls and keeps what it wrote', async () => {
+  await look();
+  assert.equal((await ask()).entries.length, 1);
+  dev.paused = true;
+  const before = asked.length;
+  const m = await look();
+  assert.deepEqual([m.on, m.why, m.entries.length, m.next], [false, 'resting', 1, null]);
+  assert.equal(asked.length, before);
 });
 
 test('at the mark with no key it stays quiet', async () => {

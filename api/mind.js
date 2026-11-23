@@ -307,7 +307,8 @@ async function ask(model, content) {
 /* ---------- one look ---------- */
 const today = () => new Date().toISOString().slice(0, 10);
 const PAUSED = true;  // the dev's switch: true makes no model calls at all, and what it wrote stays up
-const hasKey = () => !PAUSED && Boolean(process.env.ANTHROPIC_API_KEY);
+const paused = () => local().paused ?? PAUSED;
+const hasKey = () => !paused() && Boolean(process.env.ANTHROPIC_API_KEY);
 const spentToday = (s) => (s.day === today() ? s.spent : 0);
 const due = (s, t) => hasKey() && s.entries.length < MAX_ENTRIES && t >= s.next && t >= s.busy && spentToday(s) < DAY_TOKENS;
 
@@ -383,7 +384,7 @@ export async function GET(request) {
   const resting = !hasKey() || s.entries.length >= MAX_ENTRIES || spentToday(s) >= DAY_TOKENS;
   return json({
     on: !resting,
-    why: PAUSED ? 'resting' : !hasKey() ? 'no key for the model' : resting ? 'resting' : '',
+    why: paused() ? 'resting' : !hasKey() ? 'no key for the model' : resting ? 'resting' : '',
     entries: s.entries.filter((e) => e.n > after).reverse().map(({ n, at, look, text }) => ({ n, at, look, text })),
     count: s.entries.length,
     thinking: go || s.busy > t,
