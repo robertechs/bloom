@@ -96,7 +96,7 @@ That loop was one continuous render of 900 frames, so the six segments were not 
 
 Tries per segment: every segment was rendered four times, because the loop is one piece. The table says which segment each fault was in. F had none of its own.
 
-### Pass 5: one still view, one minute (the loop in this folder)
+### Pass 5: one still view, one minute
 
 Feedback on the 30 s loop: the zooms and the travelling between views were wrong. The camera should stay where it is, on the Mac and the parts, and move only very slightly and very slowly. The code on the Mac should look like it is running and thinking. It should be about a minute long, and it should feel like a live view, so the loop must not be felt. Nothing new was to be generated.
 
@@ -119,11 +119,39 @@ Checks on this pass:
 | Screen at 3.2, 4.6, 6.5, 31, 47 and 58 s | Log grows, "thinking" shows before a thought, the thought is typed out, the editor is at a different part of the file |
 | Loop point | Everything that moves repeats in exactly 60 s: the sway, the log (its last line leads into its first), the editor position, the LED (30 blinks) and the REC dot (60 blinks). Last two frames against the first two: no shift in the picture |
 
+### Pass 6: the laptop sits on the desk, and its code only runs (the loop in this folder)
+
+Feedback on pass 5: the laptop looked fake and needed shadow and more realism, and the code wrote itself, which a running program does not do. Everything else was to stay as it was: the camera, the framing, the labels in the picture, the look. Nothing new was generated.
+
+| what | before | now |
+| --- | --- | --- |
+| Laptop screen | Thoughts were typed a letter at a time behind a caret, and the editor glided to another part of the file every 10 s | Nobody is at the keyboard. The editor shows one part of the file and does not move, with no caret. Only the process's output moves: each log line appears whole, 0.1 to 3.6 s after the one before. Five times a minute bloom's own line says "thinking" with three small marks for 1.7 to 3.4 s, then the whole sentence appears at once. A block cursor blinks under the last line |
+| Shadow of the laptop | Almost none. The base lay on the mat like a cut-out | The base throws a shadow on the mat, built from three layers: tight under the edge, a middle one and a wide soft one, falling toward the camera and slightly left. Right under the front lip the mat is down to a quarter of its brightness |
+| Parts on the mat | No shadow where they touch it | Each low part (PIRs, fan, boards, Pi, AirPods case) has a small contact shadow |
+| Keyboard deck | Evenly lit | Lit by the screen: brighter and a little bluer at the hinge, 27% darker at the front edge. The keys nearest the screen pick up some of its light |
+| The display | Pure black where the picture is dark, and cut off sharp at its edge | An LCD's black is not black (about 13 of 255 here). Bright parts of the picture spill a glow over the bezel and a little past it. The glass carries a faint reflection of the room with wipe marks in it, which slides as the camera sways. The panel is 6% dimmer at its top edge than at its bottom |
+| Exposure | Fixed | Drifts by under 1%, and the white balance by under half a percent, slowly, repeating with the loop |
+| Camera path, framing, labels in the picture, look, CRF, stills | | Unchanged |
+
+How: the shadows and the light on the deck are painted onto the desk model's two pictures (the front one and the plate behind it) by `relight.py`, from the outline of the laptop's base and deck traced by hand and from the depth map, which says what lies low on the mat. The display is drawn by the renderer in every frame, so its glow and reflection follow what is on screen and where the camera is.
+
+Checks on this pass:
+
+| check | result |
+| --- | --- |
+| The screen drawing, all 1800 frames compared in turn | The only parts that ever change are the eight text rows of the terminal and the cursor under them. The editor never changes. Over the minute a text row ends at one of 20 places: 18 are the ends of whole printed lines, 2 are the "thinking" line with its marks. No row grows a letter at a time |
+| Render | One try, 1800 frames in four parts, each reporting nothing outside the model |
+| Frames at 6.6 and 31 s at full size; the old loop against the new at 31 s; a frame every 5 s on a sheet | Framing and labels as before. The laptop has a shadow in front and to its sides, the deck is lit from the hinge, the display glows at its lower edge. Code and log readable |
+| "thinking" at 5.5, 13.5, 22.2, 34.2 and 49.3 s | Each one holds, then the sentence is there in the next frame |
+| Loop point | As in pass 5: everything that moves repeats in exactly 60 s, the new drift and reflection included |
+
 ### What moves
 
 - The camera, by a few centimetres over the minute.
 - The Pi's LED.
-- The laptop screen: the log, the thoughts being typed, the pulsing dot, the editor gliding.
+- The laptop screen: log lines appearing, "thinking" before a thought, the pulsing dot, the blinking cursor. Nothing is typed and the editor does not move.
+- The reflection on the laptop's glass, with the camera.
+- The exposure, by under 1%.
 - The red REC dot.
 - Nothing else. No hands, nothing on the desk shifts.
 
@@ -140,15 +168,18 @@ Encoder tests for the loop point, on the first 12 s: at 720p and CRF 28 the enco
 
 | check | result |
 | --- | --- |
-| `deskcam-loop.mp4` | H.264, 1920x1080, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 20, 27.9 MB |
+| `deskcam-loop.mp4` | H.264, 1920x1080, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 20, 27.8 MB |
 | `deskcam-loop-720.mp4` | H.264, 1280x720, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 28, 1.2 MB |
 | `deskcam-poster.jpg` | first frame, 1920x1080 |
 | `shot-1-center.png` to `shot-5-wide.png` | 1920x1080, unchanged from pass 4 |
 | Contact sheet, a frame every 5 s | 12 frames, one view, overlays in place |
-| Loop point, last second then first second | Camera, screen and LED carry on. Frame-to-frame change (blurred, mean of 255) at 1080p: 0.89 across the loop point, 0.82 to 0.87 at the other keyframes, 0.30 between ordinary frames. At 720p: 1.33 across the loop point, 1.00 to 1.15 at the other keyframes, 0.07 between ordinary frames |
+| Loop point, the last frame against the first | Camera, screen and LED carry on. Frame-to-frame change (each frame at 640 px wide and blurred, mean of 255) at 1080p: 0.33 across the loop point, 0.26 to 0.29 at the other keyframes, 0.15 between ordinary frames. At 720p: 0.77 across the loop point, 0.57 to 0.68 at the other keyframes, 0.04 between ordinary frames. The pass 5 files read the same on this measure (0.32 and 0.75 across the loop point) |
 
 Not ideal, and left as it is:
 
-- At 720p the grain refreshes every 10 s, and the refresh at the loop point is a little stronger than the others (1.33 against 1.15 at most). Nothing in the picture moves at it; the texture is redrawn. Scaled to the bloom.cam panel (356 px wide) it comes to 1.2 brightness levels of 255 on average at a keyframe and 1.5 at the loop point, with one pixel in a hundred changing by 6 or 7. I measured it; I could not judge by eye whether it shows in playback.
+- At 720p the grain refreshes every 10 s, and the refresh at the loop point is a little stronger than the others (0.77 against 0.68 at most). Nothing in the picture moves at it; the texture is redrawn. On the pass 5 file, scaled to the bloom.cam panel (356 px wide), it came to 1.2 brightness levels of 255 on average at a keyframe and 1.5 at the loop point, with one pixel in a hundred changing by 6 or 7. I measured it; I could not judge by eye whether it shows in playback.
+- The shadows and the light on the deck are painted onto the still from outlines traced by hand. They are not worked out from a model of the lamps, so they have one direction and one softness across the whole desk.
+- The five stills (`shot-*.png`) were not remade. They show the laptop as it was before pass 6, without its shadow and with an evenly lit deck.
+- I judged the new light from frames set side by side, not from playback.
 - The 1080p file is 27.9 MB for the minute. The site plays the 720p file.
 - The bottom-left label says "center" all the time.
