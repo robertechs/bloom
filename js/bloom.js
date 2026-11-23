@@ -10,7 +10,9 @@ const BLOOM = {
   dev: 0,         // part of balance the dev paid in himself, shown as "paid by dev"
   cam: 'media/deskcam/deskcam-loop-720.mp4',      // the desk cam loop; set to '' and bloom.cam shows the blossom instead
   camPoster: 'media/deskcam/deskcam-poster.jpg',  // its first frame: shown while the loop loads, and instead of it under reduced motion
-  eye: '/api/eye',  // where the pi's own camera reports (pi/live.py). bloom.cam offers it as a second view while frames arrive; '' turns it off
+  eye: '/api/eye',  // where the pi's own camera reports (pi/live.py). its frames are the "eye" view of bloom.cam while they arrive; '' turns it off
+  eyePreview: 'media/eyecam/eye-preview-720.mp4',      // a made loop of the view from the camera's spot, shown as "preview" on the eye view until the pi sends. '' once the camera runs
+  eyePreviewPoster: 'media/eyecam/eye-preview-poster.jpg',
   x: 'https://x.com/ImShantip'
 };
 
@@ -550,66 +552,87 @@ function createCam(host, stage0) {
 const camHost = $('#cam');
 /* the cam shows bloom right now. with BLOOM.cam set that is the view of the desk.
    if the file can't be played the cam goes back to the blossom at the current stage. */
-const feed = $('.cam-feed', camHost);
-let feedOn = !!BLOOM.cam, feedSeen = false;
+const feed = $('.cam-feed', camHost), pre = $('.cam-pre', camHost);
+let feedOn = !!BLOOM.cam, preOn = !!BLOOM.eyePreview, preAsked = false, camSeen = false;
 camHost.classList.toggle('has-feed', feedOn);
 const cam = createCam(camHost, now);
 const camFb = $('.cam-fb', camHost);
 if (!cam) camFb.innerHTML = glyph(now);
-/* a live view has no beginning: whenever you look, it is as far along as the clock says */
-let syncLeft = 3;
-function syncFeed() {
-  const d = feed.duration; if (!(d > 0 && isFinite(d))) return;
-  const want = (Date.now() / 1000) % d, off = Math.abs(feed.currentTime - want);
-  if (Math.min(off, d - off) < 0.5 || syncLeft <= 0) return;
-  /* only jump where the browser says it can; a jump it can't make lands on 0 and would be asked for again */
-  const can = feed.seekable;
-  for (let i = 0; i < can.length; i++) {
-    if (want >= can.start(i) && want <= can.end(i)) { syncLeft--; feed.currentTime = want; return; }
+/* a live view has no beginning: whenever you look, it is as far along as the clock says.
+   the eye preview is the same length and joins the same way, so the laptop in both shows the same line at the same moment. */
+function loopOf(v) {
+  let left = 3;
+  function sync() {
+    const d = v.duration; if (!(d > 0 && isFinite(d))) return;
+    const want = (Date.now() / 1000) % d, off = Math.abs(v.currentTime - want);
+    if (Math.min(off, d - off) < 0.5 || left <= 0) return;
+    /* only jump where the browser says it can; a jump it can't make lands on 0 and would be asked for again */
+    const can = v.seekable;
+    for (let i = 0; i < can.length; i++) {
+      if (want >= can.start(i) && want <= can.end(i)) { left--; v.currentTime = want; return; }
+    }
   }
+  /* a seek asked for before the file has arrived may not hold, so ask again once it has */
+  v.addEventListener('loadedmetadata', sync);
+  v.addEventListener('canplaythrough', sync);
+  return on => {
+    if (!on) return v.pause();
+    if (v.paused) { left = 3; sync(); }
+    const p = v.play(); if (p) p.catch(() => {});
+  };
 }
-function playFeed() {
-  if (feedOn && !feed.hidden && feedSeen && !document.hidden && !reduced) {
-    if (feed.paused) { syncLeft = 3; syncFeed(); }
-    const p = feed.play(); if (p) p.catch(() => {});
-  } else feed.pause();
+const runFeed = loopOf(feed), runPre = loopOf(pre);
+function playCam() {
+  const go = camSeen && !document.hidden && !reduced;
+  runFeed(go && feedOn && !feed.hidden);
+  if (!preOn || pre.hidden) { if (preAsked) runPre(false); return; }
+  /* nothing of the preview is fetched until somebody asks for the eye view; under reduced motion its first frame stands in */
+  if (BLOOM.eyePreviewPoster && !pre.poster) pre.poster = BLOOM.eyePreviewPoster;
+  if (go && !preAsked) { preAsked = true; pre.src = BLOOM.eyePreview; }
+  if (preAsked) runPre(go);
 }
 if (feedOn) {
   if (BLOOM.camPoster) feed.poster = BLOOM.camPoster;
   feed.addEventListener('error', () => { feedOn = false; camHost.classList.remove('has-feed'); paintCam(); });
-  /* a seek asked for before the file has arrived may not hold, so ask again once it has */
-  feed.addEventListener('loadedmetadata', syncFeed);
-  feed.addEventListener('canplaythrough', syncFeed);
   feed.src = BLOOM.cam;
-  new IntersectionObserver(es => { feedSeen = es[0].isIntersecting; playFeed(); }).observe(camHost);
-  document.addEventListener('visibilitychange', playFeed);
+}
+if (preOn) pre.addEventListener('error', () => { preOn = false; paintEye(); });
+if (feedOn || preOn) {
+  new IntersectionObserver(es => { camSeen = es[0].isIntersecting; playCam(); }).observe(camHost);
+  document.addEventListener('visibilitychange', playCam);
 }
 
-/* the eye: what the pi's own camera sees. pi/live.py sends a frame to BLOOM.eye every so often. the view is only
-   offered while frames are arriving, each one shows the time the site received it, and the desk stays the default. */
+/* the eye: what the pi's own camera sees. pi/live.py sends a frame to BLOOM.eye every so often, and each one shows the
+   time the site received it. until the pi sends, the eye view plays BLOOM.eyePreview instead: a made loop of the view
+   from the camera's spot, with "preview" in the picture and "camera not connected yet" under it. a real frame always
+   wins over the preview. the desk stays the default. */
 const eyeImg = $('.cam-eye', camHost), eyeOv = $('.eye-ov', camHost);
 const viewBox = $('[data-cam-views]'), says = $('[data-cam-says]');
-const saysDesk = says.textContent;
-let view = 'desk', eye = null, eyeTimer = 0, eyeBusy = false;
+const saysDesk = says.textContent, saysPre = 'eye · preview · camera not connected yet';
+let view = 'desk', eye = null, eyeTimer = 0, eyeBusy = false, eyeAsk = !!BLOOM.eye;
 const eyeAge = () => eye.age + performance.now() - eye.got;                      // ms since the site received the frame
 const eyeOpen = () => !!eye && eyeAge() < Math.max(90, eye.every * 2.5) * 1000;  // closed once frames stop coming
 
 function paintCam() {
   const name = `stage ${now} · ${STAGES[now].name}`, eyeOn = view === 'eye';
+  const real = eyeOn && !!eye, mock = eyeOn && !eye;   // the camera's own frame, or the preview of it
   $('[data-cam-stage]').textContent = name;
   $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
   $('[data-cam-meta]').textContent = name;
-  camHost.setAttribute('aria-label', eyeOn ? `what bloom's own camera sees` : feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
+  camHost.setAttribute('aria-label', real ? `what bloom's own camera sees`
+    : mock ? `a preview of the view from bloom's own camera, which is not connected yet`
+    : feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
   camHost.classList.toggle('has-feed', feedOn || eyeOn);
-  /* the loop has its own labels burned in, so the overlay only sits on the blossom */
+  /* the loops have their own labels burned in, so the overlays only sit on the blossom and on the camera's frames */
   feed.hidden = !feedOn || eyeOn;
+  pre.hidden = !mock;
   $('canvas', camHost).hidden = feedOn || !cam || eyeOn;
   camFb.hidden = feedOn || !!cam || eyeOn;
   $('.cam-ov:not(.eye-ov)', camHost).hidden = feedOn || eyeOn;
-  eyeImg.hidden = eyeOv.hidden = !eyeOn;
-  if (!eyeOn) says.textContent = saysDesk;
+  eyeImg.hidden = eyeOv.hidden = !real;
+  if (!real) says.textContent = mock ? saysPre : saysDesk;
   if (cam) cam.hold(feedOn || eyeOn);
-  playFeed();
+  playCam();
 }
 
 function tickEye() {
@@ -626,8 +649,8 @@ function tickEye() {
 }
 
 function paintEye() {
-  if (view === 'eye' && !eye) view = 'desk';   // nothing left to show
-  viewBox.hidden = !(eyeOpen() || view === 'eye');
+  if (view === 'eye' && !eye && !preOn) view = 'desk';   // nothing left to show
+  viewBox.hidden = !(preOn || eyeOpen() || view === 'eye');
   $$('button', viewBox).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.camView === view)));
   paintCam();
   tickEye();
@@ -635,11 +658,11 @@ function paintEye() {
 
 async function askEye() {
   clearTimeout(eyeTimer);
-  if (eyeBusy || document.hidden) return;   // a hidden tab asks again when it is looked at
+  if (!eyeAsk || eyeBusy || document.hidden) return;   // a hidden tab asks again when it is looked at
   eyeBusy = true;
   try {
     const r = await fetch(BLOOM.eye + (eye ? `?have=${eye.id}` : ''), { cache: 'no-store' });
-    if (r.status === 404) { eyeBusy = false; return; }   // a plain file server with no /api behind it: there is no eye to ask about
+    if (r.status === 404) eyeAsk = false;   // a plain file server with no /api behind it: there is no eye to ask about
     const d = r.ok ? await r.json() : null;
     if (d && d.open) {
       const src = /^data:image\/(jpeg|webp);base64,/.test(d.frame || '') ? d.frame : eye && eye.id === d.id ? eye.src : '';
@@ -651,11 +674,11 @@ async function askEye() {
   } catch (e) { /* offline: keep the last frame, it reads as closed once it is old */ }
   eyeBusy = false;
   paintEye();
-  eyeTimer = setTimeout(askEye, view === 'eye' ? 5000 : 120000);
+  if (eyeAsk) eyeTimer = setTimeout(askEye, view === 'eye' ? 5000 : 120000);
 }
 
-paintCam();
-if (BLOOM.eye) {
+paintEye();
+if (eyeAsk || preOn) {
   viewBox.addEventListener('click', e => {
     const b = e.target.closest('button[data-cam-view]');
     if (!b || b.dataset.camView === view) return;
