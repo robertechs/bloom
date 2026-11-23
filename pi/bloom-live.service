@@ -1,0 +1,17 @@
+[Unit]
+Description=bloom live eye: sends what the camera sees to the site
+After=network-online.target
+Wants=network-online.target
+# one program can hold the camera at a time
+Conflicts=bloom-eyes.service
+
+[Service]
+User=@USER@
+WorkingDirectory=@DIR@
+EnvironmentFile=@CONF@/eye.env
+ExecStart=/usr/bin/python3 @DIR@/live.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
