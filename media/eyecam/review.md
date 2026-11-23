@@ -4,9 +4,9 @@ What is in this folder, how it was made, what was checked and what is not ideal.
 
 ## What this is
 
-bloom.cam's `eye` view is for the Raspberry Pi's own camera. The camera module is on the desk and not connected yet, so until it sends, the view plays `eye-preview-720.mp4`: a made one-minute loop of what the desk looks like from the spot where the module lies.
+bloom.cam's `eye` view is for the Raspberry Pi Camera Module 3. The module is on the desk and not wired in yet, so until it sends, the view plays `eye-preview-720.mp4`: a made one-minute loop of the module's point of view from where it lies.
 
-It is not footage from the camera, and the site does not say it is. `preview` is written in the picture for the whole minute, and the caption under it reads `eye · preview · camera not connected yet`. The first real frame from `pi/live.py` replaces it.
+The camera did not take it, and the site does not say it did. The caption under it on the page reads `Raspberry Pi Camera Module 3 pov · preview until it's wired in`. The word is on the page and not in the picture: an earlier export had `preview` written top right in the video, and it was taken out because it spoiled the picture. The first real frame from `pi/live.py` replaces it.
 
 ## Access and budget
 
@@ -22,7 +22,7 @@ It is not footage from the camera, and the site does not say it is. `preview` is
 | Depth | Depth Anything V2 Large (ONNX, on the CPU of this machine) |
 | Lens, focus, knocks, exposure | My own renderer (Python, numpy, OpenCV) |
 | Laptop screen and Pi LED | Drawn per frame by the same code as the desk loop |
-| Look, labels, encodes | ffmpeg |
+| Look, label, encodes | ffmpeg |
 
 ## The still: 3 tries, try 3 kept
 
@@ -56,7 +56,7 @@ Both loops are 60 s long and the site starts each one at the point the clock say
 
 - 1920x1080, 30 fps, 1800 frames.
 - Look: `gblur=sigma=0.75`, `eq=contrast=0.95:saturation=0.90`, `vignette=angle=PI/4.6`, `noise=c0s=10:c0f=t+u:c1s=6:c1f=t+u:c2s=6:c2f=t+u`. Softer, flatter and darker in the corners than the desk loop, as a small sensor behind a small lens is.
-- Labels in JetBrains Mono, white at 80%: `bloom.eye` top left, `preview` top right, for the whole loop. No red dot, no REC, no clock, no date. The word "LIVE" does not appear.
+- One label in JetBrains Mono, white at 80%: `bloom.eye` top left, for the whole loop, as the desk loop has `bloom.cam`. No red dot, no REC, no clock, no date. The word "LIVE" does not appear. That it is a preview is said in the caption on the page.
 - A keyframe every 300 frames exactly, so the loop point is a keyframe like the five others in the file.
 
 Encoder settings: with the first noise setting the 1080p file came to 126 MB at CRF 20, and the 720p file at CRF 28 was blocky. Five pairs of noise strength and CRF were tried on the first 10 s. Kept: the noise above with CRF 22 for 1080p and CRF 25 for 720p.
@@ -68,16 +68,17 @@ Encoder settings: with the first noise setting the 1080p file came to 126 MB at 
 | `eye-preview.mp4` | H.264, 1920x1080, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 22, 17.7 MB |
 | `eye-preview-720.mp4` (the one the site plays) | H.264, 1280x720, yuv420p, 30 fps, 1800 frames, 60.000000 s, video stream only, faststart, CRF 25, 1.0 MB |
 | `eye-preview-poster.jpg` | first frame, 1920x1080 |
-| Contact sheet, a frame every 5 s | 12 frames, one view, both labels in place in every one, nothing else written in the picture |
-| Full frames at 24.9 s (720p) and 35.5 s (1080p) | Parts recognisable, screen readable as code and a log, `preview` clear at the size the site shows it |
-| Loop point, the last frame against the first | Frame-to-frame change (each frame at 640 px wide and blurred, mean of 255) at 1080p: 0.34 across the loop point, 0.30 to 0.31 at the other keyframes, 0.14 between ordinary frames. At 720p: 0.53 across the loop point, 0.44 to 0.54 at the other keyframes |
+| A frame every 5 s | 12 frames, one view, `bloom.eye` top left in every one. The top right corner, where `preview` was, compared in each against the export that had it: nothing is written there |
+| Full frames at 24.9 s (720p) and 35.5 s (1080p) | Parts recognisable, screen readable as code and a log |
+| Loop point, the last frame against the first | Frame-to-frame change (each frame at 640 px wide and blurred, mean of 255) at 1080p: 0.34 across the loop point, 0.30 to 0.31 at the other keyframes, 0.14 between ordinary frames. At 720p: 0.52 across the loop point, 0.43 to 0.52 at the other keyframes |
 | Largest change in the file | 5.3, at 11.3 s: the first knock |
 | Screen | The same drawing as the desk loop; its check is in `media/deskcam/review.md`, pass 6 |
 
 ## Not ideal, and left as it is
 
 - The still is 1280 px wide and enlarged by half. Small print on the boards is soft at 1080p. The site shows the loop in a panel at most 356 px wide.
-- In the picture the Pi has its power cable in and its LED blinking, and the camera's ribbon runs out of the bottom of the frame, while the caption says the camera is not connected yet. The picture shows the desk as it will be; the caption says how it is.
+- In the picture the Pi has its power cable in and its LED blinking, and the camera's ribbon runs out of the bottom of the frame, while the caption says the camera is not wired in yet. The picture shows the desk as it will be; the caption says how it is.
+- Only the page says it is a preview. The video file on its own, saved or shared, carries no sign of it.
 - The Pi 5, the blue board and the PIRs are the generator's drawings of those parts, close to the real ones but not exact.
 - Nothing on the desk moves and nobody walks past. The real camera will see more than this.
 - The knocks and focus hunts come at the same seconds of every minute. Somebody who watches for several minutes can learn them.
