@@ -10,6 +10,7 @@ const BLOOM = {
   dev: 0,         // part of balance the dev paid in himself, shown as "paid by dev"
   cam: 'media/deskcam/deskcam-loop-720.mp4',      // the desk cam loop; set to '' and bloom.cam shows the blossom instead
   camPoster: 'media/deskcam/deskcam-poster.jpg',  // its first frame: shown while the loop loads, and instead of it under reduced motion
+  eye: '/api/eye',  // where the pi's own camera reports (pi/live.py). bloom.cam offers it as a second view while frames arrive; '' turns it off
   x: 'https://x.com/ImShantip'
 };
 
@@ -547,7 +548,7 @@ function createCam(host, stage0) {
 }
 
 const camHost = $('#cam');
-/* the cam shows one thing: bloom right now. with BLOOM.cam set that is the live view of the desk.
+/* the cam shows bloom right now. with BLOOM.cam set that is the view of the desk.
    if the file can't be played the cam goes back to the blossom at the current stage. */
 const feed = $('.cam-feed', camHost);
 let feedOn = !!BLOOM.cam, feedSeen = false;
@@ -584,21 +585,88 @@ if (feedOn) {
   document.addEventListener('visibilitychange', playFeed);
 }
 
+/* the eye: what the pi's own camera sees. pi/live.py sends a frame to BLOOM.eye every so often. the view is only
+   offered while frames are arriving, each one shows the time the site received it, and the desk stays the default. */
+const eyeImg = $('.cam-eye', camHost), eyeOv = $('.eye-ov', camHost);
+const viewBox = $('[data-cam-views]'), says = $('[data-cam-says]');
+const saysDesk = says.textContent;
+let view = 'desk', eye = null, eyeTimer = 0, eyeBusy = false;
+const eyeAge = () => eye.age + performance.now() - eye.got;                      // ms since the site received the frame
+const eyeOpen = () => !!eye && eyeAge() < Math.max(90, eye.every * 2.5) * 1000;  // closed once frames stop coming
+
 function paintCam() {
-  const name = `stage ${now} · ${STAGES[now].name}`;
+  const name = `stage ${now} · ${STAGES[now].name}`, eyeOn = view === 'eye';
   $('[data-cam-stage]').textContent = name;
   $('[data-cam-mark]').textContent = `${fmt(BLOOM.balance)} SOL fed${paidByDev ? ' · paid by dev' : ''}`;
   $('[data-cam-meta]').textContent = name;
-  camHost.setAttribute('aria-label', feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
+  camHost.setAttribute('aria-label', eyeOn ? `what bloom's own camera sees` : feedOn ? `bloom's desk, live, stage ${now}, ${STAGES[now].name}` : `bloom right now, stage ${now}, ${STAGES[now].name}`);
+  camHost.classList.toggle('has-feed', feedOn || eyeOn);
   /* the loop has its own labels burned in, so the overlay only sits on the blossom */
-  feed.hidden = !feedOn;
-  $('canvas', camHost).hidden = feedOn || !cam;
-  camFb.hidden = feedOn || !!cam;
-  $('.cam-ov', camHost).hidden = feedOn;
-  if (cam) cam.hold(feedOn);
+  feed.hidden = !feedOn || eyeOn;
+  $('canvas', camHost).hidden = feedOn || !cam || eyeOn;
+  camFb.hidden = feedOn || !!cam || eyeOn;
+  $('.cam-ov:not(.eye-ov)', camHost).hidden = feedOn || eyeOn;
+  eyeImg.hidden = eyeOv.hidden = !eyeOn;
+  if (!eyeOn) says.textContent = saysDesk;
+  if (cam) cam.hold(feedOn || eyeOn);
   playFeed();
 }
+
+function tickEye() {
+  if (view !== 'eye' || !eye) return;
+  const s = Math.round(eyeAge() / 1000), open = eyeOpen();
+  const at = new Date(Date.now() - eyeAge()).toLocaleTimeString([], { hour12: false });
+  says.textContent = open ? `bloom's own camera · ${s < 90 ? `${s} s ago` : `${Math.round(s / 60)} min ago`}` : `eye closed · last frame ${at}`;
+  $('[data-eye-time]').textContent = at;
+  /* what the frame saw is only said while it is fresh */
+  $('[data-eye-sees]').textContent = !open ? 'no new frames'
+    : (eye.faces ? `${eye.faces} face${eye.faces > 1 ? 's' : ''} in view` : eye.moving ? 'something moving' : 'nothing moving')
+      + (eye.sensor ? ` · ${eye.sensor} sensor` : '');
+  eyeImg.classList.toggle('shut', !open);
+}
+
+function paintEye() {
+  if (view === 'eye' && !eye) view = 'desk';   // nothing left to show
+  viewBox.hidden = !(eyeOpen() || view === 'eye');
+  $$('button', viewBox).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.camView === view)));
+  paintCam();
+  tickEye();
+}
+
+async function askEye() {
+  clearTimeout(eyeTimer);
+  if (eyeBusy || document.hidden) return;   // a hidden tab asks again when it is looked at
+  eyeBusy = true;
+  try {
+    const r = await fetch(BLOOM.eye + (eye ? `?have=${eye.id}` : ''), { cache: 'no-store' });
+    if (r.status === 404) { eyeBusy = false; return; }   // a plain file server with no /api behind it: there is no eye to ask about
+    const d = r.ok ? await r.json() : null;
+    if (d && d.open) {
+      const src = /^data:image\/(jpeg|webp);base64,/.test(d.frame || '') ? d.frame : eye && eye.id === d.id ? eye.src : '';
+      /* the answer may have waited at the CDN for a few seconds: that wait counts toward the frame's age */
+      const age = Math.max(0, d.now - d.at) + (+r.headers.get('age') || 0) * 1000;
+      eye = src ? { id: d.id, every: +d.every || 60, moving: +d.moving || 0, faces: +d.faces || 0, sensor: String(d.sensor || ''), age, got: performance.now(), src } : null;
+      if (eye && eyeImg.src !== src) eyeImg.src = src;
+    } else if (d) eye = null;
+  } catch (e) { /* offline: keep the last frame, it reads as closed once it is old */ }
+  eyeBusy = false;
+  paintEye();
+  eyeTimer = setTimeout(askEye, view === 'eye' ? 5000 : 120000);
+}
+
 paintCam();
+if (BLOOM.eye) {
+  viewBox.addEventListener('click', e => {
+    const b = e.target.closest('button[data-cam-view]');
+    if (!b || b.dataset.camView === view) return;
+    view = b.dataset.camView;
+    paintEye();
+    askEye();
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) askEye(); });
+  setInterval(tickEye, 1000);
+  askEye();
+}
 $$('.stage').forEach(el => el.classList.toggle('active', +el.dataset.stage === now));
 
 /* the cam's clock is the viewer's own time */

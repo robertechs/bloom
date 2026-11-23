@@ -51,13 +51,24 @@
       <div class="cam" id="cam" role="img" aria-label="bloom right now">
         <canvas></canvas>
         <video class="cam-feed" muted loop playsinline preload="metadata" hidden></video>
+        <img class="cam-eye" alt="" hidden>
         <div class="cam-fb" hidden></div>
         <div class="cam-ov" aria-hidden="true">
           <div class="cam-row"><span class="rec" data-rec><i></i><span data-rec-label>live</span></span><span data-clock>--:--:--</span></div>
           <div class="cam-row"><span data-cam-stage>stage 0 · seed</span><span data-cam-mark>0 SOL</span></div>
         </div>
+        <div class="cam-ov eye-ov" aria-hidden="true" hidden>
+          <div class="cam-row"><span>bloom.eye</span><span data-eye-time></span></div>
+          <div class="cam-row"><span data-eye-sees></span></div>
+        </div>
       </div>
-      <div class="cam-label"><span>live, right now</span></div>
+      <div class="cam-label">
+        <span data-cam-says>live, right now</span>
+        <span class="cam-views" data-cam-views hidden>
+          <button type="button" data-cam-view="desk" aria-pressed="true">desk</button>
+          <button type="button" data-cam-view="eye" aria-pressed="false">eye</button>
+        </span>
+      </div>
     </section>
 
     <section class="panel" aria-label="status">
@@ -181,7 +192,7 @@ then getting bloom running on it</p>
     <!-- stages -->
     <section class="sec" id="stages" data-view="stages" aria-labelledby="h-stages">
       <div class="sec-h"><h2 id="h-stages">how it grows</h2><span class="hint">7 so far. after body it keeps going</span></div>
-      <p class="lede">each stage = how much SOL in creator fees it takes to get there. the table = what those fees buy. the cam on the left follows whatever stage you're reading.</p>
+      <p class="lede">each stage = how much SOL in creator fees it takes to get there. the table = what those fees buy.</p>
       <div data-stages></div>
     </section>
 

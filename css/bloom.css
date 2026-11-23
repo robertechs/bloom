@@ -119,7 +119,16 @@ code,.mono{font-family:var(--f-mono);font-size:.92em}
 .rec{display:inline-flex;align-items:center;gap:6px}
 .rec i{width:7px;height:7px;border-radius:50%;background:#ff3b5c}
 @media (prefers-reduced-motion:no-preference){.rec i{animation:blink 1.4s steps(1) infinite}}
-.cam-label{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--rule);font-size:12.5px}
+.cam-label{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:calc(1.5em + 15px);padding:5px 10px;border-top:1px solid var(--rule);font-size:12.5px}
+/* the eye: frames from the pi's own camera. only offered while they are arriving */
+.cam-eye{display:block;width:100%;height:100%;object-fit:cover}
+.cam-eye.shut{filter:grayscale(1) brightness(.55)}
+.eye-ov{background:none}
+.cam-views{display:inline-flex;flex:none}
+.cam-views button{border:1px solid var(--rule-2);background:var(--paper);padding:1px 9px;font-size:12px;line-height:1.5}
+.cam-views button+button{border-left:0}
+.cam-views button:hover{background:#f1e6f7}
+.cam-views button[aria-pressed="true"]{background:var(--tor);border-color:var(--tor);color:#fff}
 
 /* status */
 .kv{display:grid;grid-template-columns:64px minmax(0,1fr);gap:7px 10px;font-size:13px}
