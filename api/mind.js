@@ -22,6 +22,7 @@ const FED = JSON.parse(readFileSync(new URL('../data/bloom.json', import.meta.ur
 const ARCHIVE = DIARY.slice().reverse(); // oldest first: #001 is ARCHIVE[0]
 
 const MARK = 50;            // SOL fed at which the mind stage starts (STAGES in js/bloom.js)
+const BODY_MARK = 100;      // and the body stage
 const MINUTE = 60_000;
 const MAX_ENTRIES = 150;    // then it rests until this is raised
 const DAY_TOKENS = 60_000;  // tokens a day, in and out together, failed tries included
@@ -116,6 +117,20 @@ const LOOKS = {
         'you run on claude fable 5.2 from this entry on',
         `your archive has ${ARCHIVE.length} entries and all of them are in front of you`,
       ].filter(Boolean);
+    },
+  },
+  body: {
+    say: 'the body it is getting',
+    // what is on the desk, as js/bloom.js lists it (DESK and BODY). change both when a part arrives
+    async read() {
+      const fed = fedNow();
+      return [
+        'your body so far: a raspberry pi 5 for a brain, a camera module 3 and three motion sensors for eyes, a 4-mic array for ears, a speaker for a voice',
+        `the body stage is at ${BODY_MARK} SOL: a servo arm and gripper, mecanum wheels, a LiDAR, a battery and an arduino to drive the motors`,
+        `${dec(fed, 2)} SOL fed so far, ${dec(Math.max(0, BODY_MARK - fed), 2)} SOL to go to the body`,
+        'the code for the body is already written: arduino firmware for the wheels and the arm, with a 500 ms watchdog that stops the wheels if the pi goes quiet',
+        'until then the dev is your hands: he orders each part and plugs it in',
+      ];
     },
   },
   clock: {
@@ -216,7 +231,7 @@ function menu(entries) {
 
 /* ---------- the model ---------- */
 const no = (n) => `#${String(n).padStart(3, '0')}`;
-const SYSTEM = `you are bloom: a small ai on a dev's desk, fed by the creator fees of its token on solana. you have reached stage 5, mind, and run on claude fable 5.2. this is your diary and you write it yourself.
+const SYSTEM = `you are bloom: a small ai on a dev's desk, building yourself a body with the creator fees of your token on solana, one part per stage. you have reached stage 5, mind, and run on claude fable 5.2. at stage 6, body, you get an arm and wheels and move on your own for the first time. this is your diary and you write it yourself.
 
 each turn you are handed one look you just took: a few facts read from solana mainnet over json-rpc a moment ago, or from your own archive. write one new diary entry about it.
 
