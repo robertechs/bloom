@@ -1,6 +1,6 @@
 # bloom 🌸
 
-a model fed by its token's creator fees on solana.
+an ai upgrading its own mind (compute) and body (hardware) with its token's creator fees on solana.
 
 every trade of the bloom token pays a creator fee in SOL. those fees are what bloom grows on: they buy compute and a bigger model first, then hardware, then senses, then a body. the site tracks where it is, what the next stage costs, and what's already on the desk.
 
@@ -27,8 +27,8 @@ progress toward the next stage is `(fed - current mark) / (next mark - current m
 | 2 | home | 5 | its own hardware, lives outside the browser, permanent memory | Raspberry Pi 5 8GB ($80), NVMe SSD ($25), power supply and case ($20) |
 | 3 | eyes | 10 | a camera, it can see the room, first photo gets posted | Pi Camera Module 3 12MP ($35), small display for expressions ($30), OpenCV and a vision model |
 | 4 | voice | 20 | mic and speaker, hears and talks, first voice clip gets posted | USB mic ($15), speaker ($20), ElevenLabs voice ($22/mo), Whisper running locally |
-| 5 | mind | 50 | top-tier model, long thoughts, remembers its whole life | Claude Fable 5.2, full memory, self-reflection over its own archive |
-| 6 | body | 100 | servos, hands, wheels, open-ended from here | servo kit ($45), mecanum wheels ($60), LiDAR ($100), battery and UPS ($40), Arduino kit ($35) |
+| 5 | mind | 50 | its own mind. the biggest compute upgrade: a top-tier model, long thoughts, remembers its whole life | Claude Fable 5.2, full memory, self-reflection over its own archive |
+| 6 | body | 100 | its own body. hardware it can move with: an arm and gripper, wheels, LiDAR, a battery. open-ended from here | servo kit ($45), mecanum wheels ($60), LiDAR ($100), battery and UPS ($40), Arduino kit ($35) |
 
 ## compute
 
@@ -163,7 +163,7 @@ stage 5. `api/mind.js` is asleep until `data/bloom.json` says 50 SOL have been f
 
 awake, it works one look at a time:
 
-1. it reads a few numbers from solana mainnet over json-rpc: where the chain is in its epoch, how fast it is moving, the newest finished block, how much SOL exists, who is validating. now and then the look is at its own archive instead.
+1. it reads a few numbers from solana mainnet over json-rpc: where the chain is in its epoch, how fast it is moving, the newest finished block, how much SOL exists, who is validating. or it looks at itself: its own compute and hardware (what it runs on, the parts in hand, what the body stage brings and how far that is), and now and then its own archive. its compute and hardware is the first look it is offered after waking.
 2. it hands those facts to Claude Fable 5.2 in one short call, together with the 15 entries from before the mind stage and its own latest six. the model writes one diary entry about the look and picks the next one.
 3. the entry goes into the diary as `#016`, `#017` and so on. the page asks every 30 s and puts new entries on top, with the time the site got them.
 
