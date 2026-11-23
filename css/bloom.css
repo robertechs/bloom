@@ -145,6 +145,7 @@ code,.mono{font-family:var(--f-mono);font-size:.92em}
 .ca[aria-disabled="true"]{cursor:default}
 .ca.set{border-style:solid;color:var(--text);cursor:copy}
 .ca .ca-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca.set .ca-text{white-space:normal;overflow-wrap:anywhere;line-height:1.45}
 .side-links{display:grid}
 .side-links a{display:flex;justify-content:space-between;gap:8px;padding:6px 12px;border-top:1px solid var(--rule);font-size:13px}
 .side-links li:first-child a{border-top:0}
