@@ -1,5 +1,5 @@
 {
-  "functions": {
-    "api/mind.js": { "maxDuration": 60, "includeFiles": "data/bloom.json" }
-  }
+  "routes": [
+    { "src": "/(.*)", "status": 404, "dest": "/404.html" }
+  ]
 }
